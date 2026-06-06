@@ -270,7 +270,7 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
     <div class="tab-panel" id="tab-cartes">
       <p class="page-title">Cartes de credit</p>
       <div class="section-card">
-        <div class="cartes-grid">
+        <div class="cartes-grid" style="grid-template-columns:1fr 1fr;">
           <div class="carte-col">
             <div class="carte-header amex-header">
               <span class="carte-name">American Express</span>
@@ -296,13 +296,6 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
             <div id="capone-rows"></div>
             <button class="carte-add-btn" onclick="addCarteRow('capone')">+ Ajouter</button>
             <div class="carte-total-row"><span>Total</span><span id="capone-total-pay" class="carte-total-pay">0$</span><span id="capone-total-dep" class="carte-total-dep">0$</span><span id="capone-diff" class="carte-diff">0$</span><span></span></div>
-          </div>
-          <div class="carte-col">
-            <div class="carte-header amazon-header"><span class="carte-name">Amazon</span></div>
-            <div class="carte-sub-header" style="grid-template-columns:60px 80px 1fr 20px;"><span>Date</span><span>Depenses</span><span>Raisons</span><span></span></div>
-            <div id="amazon-rows"></div>
-            <button class="carte-add-btn" onclick="addCarteRow('amazon')">+ Ajouter</button>
-            <div class="carte-total-row" style="grid-template-columns:60px 80px 1fr 20px;"><span>Total Amazon</span><span id="amazon-total-dep" class="carte-total-dep">0$</span><span></span><span></span></div>
           </div>
         </div>
       </div>
@@ -685,11 +678,9 @@ window.addCarteRow = function(carte) {
 };
 
 window.renderCartesSummary = function() {
-  const amazonTotal = (cartesData.amazon||[]).reduce((s,r)=>s+(parseFloat(r.dep)||0),0);
+  const amazonTotal = amazonTrackerData.reduce((s,r)=>s+(parseFloat(r.amt)||0),0);
   const amexAmazonRow = (cartesData.amex||[]).find(r=>r.raison==='Amazon');
-  if (amexAmazonRow) amexAmazonRow.dep = amazonTotal;
-  const depEl = document.getElementById('amazon-total-dep');
-  if (depEl) depEl.textContent = amazonTotal.toFixed(2)+'$';
+  if (amexAmazonRow) { amexAmazonRow.dep = amazonTotal; renderCarteRows('amex'); }
   ['amex','capone'].forEach(carte => {
     let totalPay=0, totalDep=0;
     (cartesData[carte]||[]).forEach(r=>{ totalPay+=parseFloat(r.pay)||0; totalDep+=parseFloat(r.dep)||0; });
@@ -797,8 +788,8 @@ function makeAmazonRow(desc='', cat='Autre', amt='', idx=0) {
   const delBtn = div.querySelector('button');
   inputs[0].oninput  = ()=>{ if(amazonTrackerData[div.dataset.idx*1])amazonTrackerData[div.dataset.idx*1].desc=inputs[0].value; saveAmazonTracker(); };
   catSel.onchange = ()=>{ if(amazonTrackerData[div.dataset.idx*1])amazonTrackerData[div.dataset.idx*1].cat=catSel.value; calcAmazonTotal(); saveAmazonTracker(); };
-  inputs[1].oninput   = ()=>{ if(amazonTrackerData[div.dataset.idx*1])amazonTrackerData[div.dataset.idx*1].amt=parseFloat(inputs[1].value)||0; calcAmazonTotal(); saveAmazonTracker(); };
-  delBtn.onclick  = ()=>{ amazonTrackerData.splice(div.dataset.idx*1,1); div.remove(); document.querySelectorAll('.amazon-tracker-row').forEach((r,i)=>r.dataset.idx=i); calcAmazonTotal(); saveAmazonTracker(); };
+  inputs[1].oninput   = ()=>{ if(amazonTrackerData[div.dataset.idx*1])amazonTrackerData[div.dataset.idx*1].amt=parseFloat(inputs[1].value)||0; calcAmazonTotal(); renderCartesSummary(); saveAmazonTracker(); };
+  delBtn.onclick  = ()=>{ amazonTrackerData.splice(div.dataset.idx*1,1); div.remove(); document.querySelectorAll('.amazon-tracker-row').forEach((r,i)=>r.dataset.idx=i); calcAmazonTotal(); renderCartesSummary(); saveAmazonTracker(); };
   cont.appendChild(div);
 }
 
