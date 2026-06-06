@@ -192,17 +192,16 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
   </nav>
 
   <div class="tabs-bar">
-    <button class="tab-btn active" data-tab="accueil">My Year</button>
-    <button class="tab-btn" data-tab="budget">Budget</button>
+    <button class="tab-btn active" data-tab="budget">Budget</button>
     <button class="tab-btn" data-tab="cartes">Cartes</button>
     <button class="tab-btn" data-tab="amazon">Amazon</button>
-
+    <button class="tab-btn" data-tab="accueil">My Year</button>
   </div>
 
   <div class="main-content">
 
     <!-- ONGLET ACCUEIL : MY YEAR -->
-    <div class="tab-panel active" id="tab-accueil">
+    <div class="tab-panel" id="tab-accueil">
       <p class="page-title">My Year</p>
       <div class="section-card">
         <div class="section-top">
@@ -232,7 +231,7 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
     </div>
 
     <!-- ONGLET BUDGET -->
-    <div class="tab-panel" id="tab-budget">
+    <div class="tab-panel active" id="tab-budget">
       <p class="page-title">Budget</p>
       <div class="stats-row">
         <div class="stat-card">
@@ -414,7 +413,7 @@ const DAYS_FR   = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
 const fmtB = v => (v >= 0 ? '' : '-') + Math.abs(v).toFixed(2) + '$';
 const budgetKey = (y, m, d) => `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
-const AMAZON_CATS   = ['Pharmacie','Aliments','Chat','Quincaillerie','Maison','Cadeaux','Activites','Menager','Autre'];
+const AMAZON_CATS   = ['Pharmacie','Aliments','Chat','Quincaillerie','Maison','Cadeaux','Activites','Menager','Terrain','Jardinage','LED','Oiseaux','Autre'];
 
 const AMEX_FIXED   = [
   {date:'',pay:0,dep:120.67,raison:'Bell'},
@@ -426,6 +425,7 @@ const AMEX_FIXED   = [
 const CAPONE_FIXED = [
   {date:'',pay:0,dep:38.58,raison:'Cellulaire'},
   {date:'',pay:0,dep:9.20,raison:'TSN+'},
+  {date:'',pay:0,dep:32.19,raison:'Claude IA'},
 ];
 
 // ─── STATE ─────────────────────────────────────────────
