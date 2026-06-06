@@ -236,7 +236,7 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
       <p class="page-title">Budget</p>
       <div class="stats-row">
         <div class="stat-card">
-          <input type="number" id="b-solde-input" class="budget-salary-input" placeholder="0" value="0" oninput="calcArgentRestant()">
+          <input type="number" id="b-solde-input" class="budget-salary-input" placeholder="0" value="0" oninput="calcArgentRestant();saveSolde()">
           <span class="stat-label">Solde actuel</span>
         </div>
         <div class="stat-card"><span class="stat-value" id="b-depenses" style="color:#F06060">0$</span><span class="stat-label">Depenses payees</span></div>
@@ -436,6 +436,7 @@ let budgetSelectedDay = null;
 let cartesData    = {amex:[], capone:[], amazon:[]};
 let _budgetSettings = {salary:0, solde:0};
 let _remainingTotal = 0;
+let _paidTotal = 0;
 let amazonTrackerData = [];
 
 // ─── LOAD ALL ──────────────────────────────────────────
@@ -567,6 +568,7 @@ function calcBudgetSummary() {
     if (date <= today) paidTotal += dayTotal; else remainingTotal += dayTotal;
   }
   _remainingTotal = remainingTotal;
+  _paidTotal = paidTotal;
   const set = (id,v,c) => { const e=document.getElementById(id); if(e){e.textContent=v; if(c)e.style.color=c;} };
   set('b-depenses', fmtB(paidTotal));
   set('b-reste', fmtB(remainingTotal), remainingTotal>0?'var(--amber)':'var(--teal)');
@@ -575,11 +577,20 @@ function calcBudgetSummary() {
 
 function calcArgentRestant() {
   const solde = parseFloat(document.getElementById('b-solde-input')?.value)||0;
-  const restant = solde - _remainingTotal;
+  _budgetSettings.solde = solde;
+  const restant = solde - _paidTotal - _remainingTotal;
   const el = document.getElementById('b-argent-restant');
   if (el) { el.textContent=fmtB(restant); el.style.color=restant>=0?'var(--teal)':'#F06060'; }
 }
 window.calcArgentRestant = calcArgentRestant;
+
+window.saveSolde = async function() {
+  try {
+    await setDoc(doc(db,'users',uid(),'settings','budget'), {
+      solde: parseFloat(document.getElementById('b-solde-input')?.value)||0
+    });
+  } catch(e) { console.error(e); }
+};
 
 function renderNextPayments() {
   const el = document.getElementById('next-payments-list');
@@ -624,8 +635,7 @@ window.openBudgetDay = openBudgetDay;
 window.addBudgetEntryRow = function() {
   const cont = document.getElementById('budget-new-entries');
   const row = document.createElement('div'); row.className='budget-entry-row';
-  const cats = ['Epicerie','Restaurant','Transport','Sante','Loisirs','Abonnements','Autre'];
-  row.innerHTML = `<select class="budget-entry-select">${cats.map(c=>`<option>${c}</option>`).join('')}</select><input type="number" class="budget-entry-amt" placeholder="0.00">`;
+  row.innerHTML = `<input type="text" class="budget-entry-select" placeholder="Categorie / Raison"><input type="number" class="budget-entry-amt" placeholder="0.00">`;
   cont.appendChild(row);
 };
 
