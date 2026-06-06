@@ -821,12 +821,13 @@ function makeAmazonRow(desc='', cat='Autre', amt='', idx=0) {
   const cont = document.getElementById('amazon-tracker-rows');
   if (!cont) return;
   const div = document.createElement('div'); div.className='amazon-tracker-row'; div.dataset.idx=idx;
-  div.innerHTML=`<input type="text" placeholder="Description" value="${desc}"><input type="text" placeholder="Categorie" value="${cat||''}"><input type="number" placeholder="0.00" value="${amt||''}"><button class="amazon-del-btn">x</button>`;
+  div.innerHTML=`<input type="text" placeholder="Description" value="${desc}"><select>${AMAZON_CATS.map(c=>`<option${c===cat?' selected':''}>${c}</option>`).join('')}</select><input type="number" placeholder="0.00" value="${amt||''}"><button class="amazon-del-btn">x</button>`;
   const inputs = div.querySelectorAll('input');
+  const catSel = div.querySelector('select');
   const delBtn = div.querySelector('button');
   inputs[0].oninput = ()=>{ if(amazonTrackerData[div.dataset.idx*1])amazonTrackerData[div.dataset.idx*1].desc=inputs[0].value; saveAmazonTracker(); };
-  inputs[1].oninput = ()=>{ if(amazonTrackerData[div.dataset.idx*1])amazonTrackerData[div.dataset.idx*1].cat=inputs[1].value; calcAmazonTotal(); saveAmazonTracker(); };
-  inputs[2].oninput = ()=>{ if(amazonTrackerData[div.dataset.idx*1])amazonTrackerData[div.dataset.idx*1].amt=parseFloat(inputs[2].value)||0; calcAmazonTotal(); renderCartesSummary(); saveAmazonTracker(); };
+  catSel.onchange = ()=>{ if(amazonTrackerData[div.dataset.idx*1])amazonTrackerData[div.dataset.idx*1].cat=catSel.value; calcAmazonTotal(); saveAmazonTracker(); };
+  inputs[1].oninput = ()=>{ if(amazonTrackerData[div.dataset.idx*1])amazonTrackerData[div.dataset.idx*1].amt=parseFloat(inputs[1].value)||0; calcAmazonTotal(); renderCartesSummary(); saveAmazonTracker(); };
   delBtn.onclick = ()=>{ amazonTrackerData.splice(div.dataset.idx*1,1); div.remove(); document.querySelectorAll('.amazon-tracker-row').forEach((r,i)=>r.dataset.idx=i); calcAmazonTotal(); renderCartesSummary(); saveAmazonTracker(); };
   cont.appendChild(div);
 }
