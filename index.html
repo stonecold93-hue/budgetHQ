@@ -304,16 +304,36 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
     <!-- ONGLET AMAZON -->
     <div class="tab-panel" id="tab-amazon">
       <p class="page-title">Tracker Amazon</p>
+
+      <!-- ACHATS DU MOIS -->
       <div class="section-card">
         <div class="section-top">
-          <h2 class="section-title">Achats Amazon</h2>
-          <span id="amazon-grand-total" style="font-size:20px;color:#F06060;font-family:'Cormorant Garamond',serif;">0.00$</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button class="btn-ghost" id="amazon-prev">← Precedent</button>
+            <h2 class="section-title" id="amazon-month-title"></h2>
+            <button class="btn-ghost" id="amazon-next">Suivant →</button>
+          </div>
+          <span id="amazon-grand-total" style="font-size:22px;color:#F06060;font-family:'Cormorant Garamond',serif;">0.00$</span>
         </div>
-        <div id="amazon-tracker-summary" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);"></div>
         <div class="amazon-col-heads"><span>Description</span><span>Categorie</span><span style="text-align:right;">Montant</span><span></span></div>
         <div id="amazon-tracker-rows"></div>
         <button class="btn-ghost" style="width:100%;margin-top:8px;" onclick="addAmazonRow()">+ Ajouter un achat</button>
       </div>
+
+      <!-- RESUME PAR CATEGORIE -->
+      <div class="section-card">
+        <h2 class="section-title" style="margin-bottom:14px;">Resume par categorie</h2>
+        <div id="amazon-tracker-summary"></div>
+      </div>
+
+      <!-- GRAPHIQUE TARTE -->
+      <div class="section-card">
+        <h2 class="section-title" style="margin-bottom:14px;">Repartition</h2>
+        <div style="display:flex;justify-content:center;max-height:300px;">
+          <canvas id="amazon-pie-chart"></canvas>
+        </div>
+      </div>
+
     </div>
 
 
@@ -756,21 +776,30 @@ window.loadAnnualSummary = async function() {
 };
 
 // ─── AMAZON TRACKER ────────────────────────────────────
+let amazonYear  = new Date().getFullYear();
+let amazonMonth = new Date().getMonth();
+let amazonPieChart = null;
+
+function amazonMonthKey() {
+  return `amazon_${amazonYear}_${String(amazonMonth+1).padStart(2,'0')}`;
+}
+
 async function loadAmazonTracker() {
   try {
-    const snap = await getDoc(doc(db,'users',uid(),'settings','amazon_tracker'));
-    if (snap.exists()) amazonTrackerData = snap.data().rows ? JSON.parse(snap.data().rows) : [];
-    else amazonTrackerData = [];
+    const snap = await getDoc(doc(db,'users',uid(),'settings',amazonMonthKey()));
+    amazonTrackerData = snap.exists() && snap.data().rows ? JSON.parse(snap.data().rows) : [];
   } catch(e) { amazonTrackerData=[]; }
   renderAmazonTracker();
 }
 
 async function saveAmazonTracker() {
-  try { await setDoc(doc(db,'users',uid(),'settings','amazon_tracker'),{rows:JSON.stringify(amazonTrackerData)}); }
+  try { await setDoc(doc(db,'users',uid(),'settings',amazonMonthKey()),{rows:JSON.stringify(amazonTrackerData)}); }
   catch(e) { console.error(e); }
 }
 
 function renderAmazonTracker() {
+  const titleEl = document.getElementById('amazon-month-title');
+  if (titleEl) titleEl.textContent = MONTHS_FR[amazonMonth] + ' ' + amazonYear;
   const cont = document.getElementById('amazon-tracker-rows');
   if (!cont) return;
   cont.innerHTML='';
@@ -803,11 +832,43 @@ function calcAmazonTotal() {
   const total = amazonTrackerData.reduce((s,r)=>s+(parseFloat(r.amt)||0),0);
   const el = document.getElementById('amazon-grand-total');
   if (el) el.textContent=total.toFixed(2)+'$';
+
+  // Resume par categorie — liste
+  const bycat={};
+  amazonTrackerData.forEach(r=>{ const c=r.cat||'Autre'; if(!bycat[c])bycat[c]=0; bycat[c]+=parseFloat(r.amt)||0; });
+  const entries=Object.entries(bycat).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   const sumEl = document.getElementById('amazon-tracker-summary');
   if (sumEl) {
-    const bycat={};
-    amazonTrackerData.forEach(r=>{ const c=r.cat||'Autre'; if(!bycat[c])bycat[c]=0; bycat[c]+=parseFloat(r.amt)||0; });
-    sumEl.innerHTML=Object.entries(bycat).map(([c,v])=>`<span style="font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.05);color:var(--text2);">${c} <span style="color:#F06060;">${v.toFixed(2)}$</span></span>`).join('');
+    if (!entries.length) { sumEl.innerHTML='<p style="font-size:11px;color:var(--text3);">Aucun achat ce mois</p>'; }
+    else {
+      let html=`<div style="display:grid;grid-template-columns:1fr 90px 60px;gap:4px;padding:0 0 6px;border-bottom:2px solid var(--border2);margin-bottom:4px;font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;"><span>Categorie</span><span style="text-align:right;">Montant</span><span style="text-align:right;">%</span></div>`;
+      entries.forEach(([c,v])=>{ const pct=total>0?Math.round(v/total*100):0; html+=`<div style="display:grid;grid-template-columns:1fr 90px 60px;gap:4px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${c}</span><span style="text-align:right;color:#F06060;font-family:DM Mono,monospace;">${v.toFixed(2)}$</span><span style="text-align:right;color:var(--text3);font-family:DM Mono,monospace;">${pct}%</span></div>`; });
+      html+=`<div style="display:grid;grid-template-columns:1fr 90px 60px;gap:4px;padding:8px 0 0;font-size:11px;border-top:2px solid var(--border2);margin-top:4px;"><span style="color:var(--text);">Total</span><span style="text-align:right;color:#F06060;font-family:DM Mono,monospace;">${total.toFixed(2)}$</span><span></span></div>`;
+      sumEl.innerHTML=html;
+    }
+  }
+
+  // Graphique tarte
+  const PIE_COLORS = ['#B0B8C4','#707C8C','#404A58','#34C472','#F4A623','#F06060','#60A5FA','#a855f7','#2DD4BF','#C2714F'];
+  const canvas = document.getElementById('amazon-pie-chart');
+  if (canvas && entries.length) {
+    if (amazonPieChart) { amazonPieChart.destroy(); amazonPieChart=null; }
+    amazonPieChart = new Chart(canvas, {
+      type:'doughnut',
+      data:{
+        labels: entries.map(([c])=>c),
+        datasets:[{ data: entries.map(([,v])=>v), backgroundColor: entries.map((_,i)=>PIE_COLORS[i%PIE_COLORS.length]), borderColor:'#080A0E', borderWidth:2 }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:true,
+        plugins:{
+          legend:{ position:'right', labels:{ color:'#a0a0a0', font:{family:'DM Mono',size:11}, padding:14, boxWidth:12 } },
+          tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${ctx.raw.toFixed(2)}$` } }
+        }
+      }
+    });
+  } else if (canvas && !entries.length && amazonPieChart) {
+    amazonPieChart.destroy(); amazonPieChart=null;
   }
 }
 window.calcAmazonTotal = calcAmazonTotal;
@@ -837,6 +898,8 @@ function calcBudgetBilan() {
 // ─── NAV ───────────────────────────────────────────────
 document.getElementById('budget-prev')?.addEventListener('click', async()=>{ budgetMonth--; if(budgetMonth<0){budgetMonth=11;budgetYear--;} await loadCartes(); renderBudget(); renderCartes(); });
 document.getElementById('budget-next')?.addEventListener('click', async()=>{ budgetMonth++; if(budgetMonth>11){budgetMonth=0;budgetYear++;} await loadCartes(); renderBudget(); renderCartes(); });
+document.getElementById('amazon-prev')?.addEventListener('click', async()=>{ amazonMonth--; if(amazonMonth<0){amazonMonth=11;amazonYear--;} await loadAmazonTracker(); renderCartesSummary(); });
+document.getElementById('amazon-next')?.addEventListener('click', async()=>{ amazonMonth++; if(amazonMonth>11){amazonMonth=0;amazonYear++;} await loadAmazonTracker(); renderCartesSummary(); });
 document.getElementById('budget-modal-close')?.addEventListener('click',()=>{ document.getElementById('budget-day-modal')?.classList.add('hidden'); budgetSelectedDay=null; });
 document.getElementById('budget-day-modal')?.addEventListener('click',e=>{ if(e.target===e.currentTarget){e.currentTarget.classList.add('hidden');budgetSelectedDay=null;} });
 
