@@ -635,7 +635,7 @@ window.openBudgetDay = openBudgetDay;
 window.addBudgetEntryRow = function() {
   const cont = document.getElementById('budget-new-entries');
   const row = document.createElement('div'); row.className='budget-entry-row';
-  const cats = ['Epicerie','Restaurant','Transport','Sante','Loisirs','Abonnements','Autre'];
+  const cats = ['Hypotheque','Marge a tout vielle','Reer','Marge a tout et perso','Hydro','Taxe municipale','Ass. maison','Ass. Eric','Ass. Ryan','Pharmacie','Service de garde','American Express','Capital One','Autre'];
   row.innerHTML = `<select class="budget-entry-select">${cats.map(c=>`<option>${c}</option>`).join('')}</select><input type="number" class="budget-entry-amt" placeholder="0.00">`;
   cont.appendChild(row);
 };
