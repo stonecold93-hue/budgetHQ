@@ -485,7 +485,7 @@ async function loadCartes() {
   const caponeLimEl = document.getElementById('capone-limite');
   try {
     const snap = await getDoc(doc(db,'users',uid(),'settings',key));
-    const hasData = snap.exists() && snap.data().amex && JSON.parse(snap.data().amex||'[]').length > 0;
+    const hasData = snap.exists();
     if (hasData) {
       const d = snap.data();
       cartesData.amex   = JSON.parse(d.amex   || '[]');
@@ -713,7 +713,6 @@ window.renderCartesSummary = function() {
     if (diffEl) { diffEl.textContent=(diff>=0?'+':'')+diff.toFixed(2)+'$'; diffEl.style.color=diff>=0?'var(--teal)':'#F06060'; }
   });
   renderCartesCatSummary();
-  saveCartes();
 };
 
 function renderCartesCatSummary() {
