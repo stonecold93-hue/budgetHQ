@@ -578,7 +578,7 @@ function calcBudgetSummary() {
 function calcArgentRestant() {
   const solde = parseFloat(document.getElementById('b-solde-input')?.value)||0;
   _budgetSettings.solde = solde;
-  const restant = solde - _paidTotal - _remainingTotal;
+  const restant = solde - _remainingTotal;
   const el = document.getElementById('b-argent-restant');
   if (el) { el.textContent=fmtB(restant); el.style.color=restant>=0?'var(--teal)':'#F06060'; }
 }
