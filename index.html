@@ -693,8 +693,10 @@ function renderCarteRows(carte) {
       div.innerHTML = `<input class="carte-input" type="text" placeholder="MM/DD" value="${row.date||''}"><input class="carte-input carte-input-pay" type="number" placeholder="0.00" value="${row.pay||''}"><input class="carte-input carte-input-dep" type="number" placeholder="0.00" value="${row.dep||''}"><input class="carte-input" type="text" placeholder="Raison" value="${row.raison||''}"><button class="carte-del-btn">x</button>`;
       const inputs = div.querySelectorAll('input');
       inputs[0].oninput = () => { cartesData[carte][div.dataset.idx*1].date=inputs[0].value; saveCartes(); };
-      inputs[1].oninput = () => { cartesData[carte][div.dataset.idx*1].pay=parseFloat(inputs[1].value)||0; renderCartesSummary(); saveCartes(); };
-      inputs[2].oninput = () => { cartesData[carte][div.dataset.idx*1].dep=parseFloat(inputs[2].value)||0; renderCartesSummary(); saveCartes(); };
+      inputs[1].oninput = () => { cartesData[carte][div.dataset.idx*1].pay=parseFloat(inputs[1].value)||0; saveCartes(); };
+      inputs[1].onblur  = () => { renderCartesSummary(); };
+      inputs[2].oninput = () => { cartesData[carte][div.dataset.idx*1].dep=parseFloat(inputs[2].value)||0; saveCartes(); };
+      inputs[2].onblur  = () => { renderCartesSummary(); };
       inputs[3].oninput = () => { cartesData[carte][div.dataset.idx*1].raison=inputs[3].value; saveCartes(); };
       div.querySelector('button').onclick = () => { cartesData[carte].splice(div.dataset.idx*1,1); renderCartes(); saveCartes(); };
     }
