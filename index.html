@@ -767,8 +767,19 @@ window.loadAnnualSummary = async function() {
       if (!snap.exists()) continue;
       const d = snap.data();
       let monthTotal=0;
-      const allRows=[...JSON.parse(d.amex||'[]'),...JSON.parse(d.capone||'[]'),...JSON.parse(d.amazon||'[]')];
+      const allRows=[...JSON.parse(d.amex||'[]'),...JSON.parse(d.capone||'[]')];
       allRows.forEach(r=>{ const dep=parseFloat(r.dep)||0; if(dep<=0)return; const raison=r.raison||'Autre'; if(!groups[raison])groups[raison]=0; groups[raison]+=dep; monthTotal+=dep; });
+
+      // Tracker Amazon du même mois
+      const amazonKey = `amazon_${year}_${String(m+1).padStart(2,'0')}`;
+      try {
+        const asnap = await getDoc(doc(db,'users',uid(),'settings',amazonKey));
+        if (asnap.exists()) {
+          const arows = JSON.parse(asnap.data().rows||'[]');
+          arows.forEach(r=>{ const amt=parseFloat(r.amt)||0; if(amt<=0)return; const raison=r.cat||'Autre'; if(!groups[raison])groups[raison]=0; groups[raison]+=amt; monthTotal+=amt; });
+        }
+      } catch(e) {}
+
       if (monthTotal>0) byMonth[m]=monthTotal;
     } catch(e) {}
   }
