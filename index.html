@@ -96,7 +96,7 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
 /* MODAL */
 .budget-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:300;}
 .budget-modal-overlay.hidden{display:none!important;}
-.budget-modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:24px;width:340px;max-height:80vh;overflow-y:auto;}
+.budget-modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:24px;width:360px;max-height:80vh;overflow-y:auto;}
 .budget-existing-row{display:flex;align-items:center;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid var(--border);}
 .budget-existing-row:last-child{border-bottom:none;}
 .budget-existing-cat{color:var(--text2);flex:1;}
@@ -156,6 +156,29 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
 .year-table{border-collapse:collapse;width:100%;font-size:11px;}
 .year-table th{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--border2);font-weight:400;text-align:left;}
 .year-table td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text2);}
+
+/* MODAL CATEGORIES */
+.cat-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:400;}
+.cat-modal-overlay.hidden{display:none!important;}
+.cat-modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:24px;width:340px;max-height:80vh;overflow-y:auto;}
+.cat-item-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);}
+.cat-item-row span{flex:1;font-size:11px;color:var(--text2);}
+.cat-item-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:2px 6px;}
+.cat-item-del:hover{color:#F06060;}
+.cat-add-row{display:flex;gap:8px;margin-top:10px;}
+.cat-add-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:7px 10px;outline:none;}
+
+/* MODAL PAIEMENTS FIXES */
+.fixed-section-title{font-size:10px;color:var(--text3);letter-spacing:.15em;text-transform:uppercase;margin:12px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border2);}
+.fixed-item-row{display:grid;grid-template-columns:1fr 80px 24px;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);}
+.fixed-item-row input{background:none;border:none;outline:none;font-family:'DM Mono',monospace;font-size:11px;}
+.fixed-item-row input:first-child{color:var(--text2);}
+.fixed-item-row input:nth-child(2){color:#F06060;text-align:right;}
+.fixed-item-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;}
+.fixed-item-del:hover{color:#F06060;}
+.fixed-add-row{display:flex;gap:6px;margin-top:8px;}
+.fixed-add-raison{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:6px 8px;outline:none;}
+.fixed-add-amt{width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:#F06060;font-family:'DM Mono',monospace;font-size:11px;padding:6px 8px;text-align:right;outline:none;}
 </style>
 </head>
 <body>
@@ -267,7 +290,10 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
 
     <!-- ONGLET CARTES -->
     <div class="tab-panel" id="tab-cartes">
-      <p class="page-title">Cartes de credit</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <p class="page-title" style="margin-bottom:0;">Cartes de credit</p>
+        <button class="btn-ghost" onclick="openFixedModal()">⚙ Paiements fixes</button>
+      </div>
       <div class="section-card">
         <div class="cartes-grid" style="grid-template-columns:1fr 1fr;">
           <div class="carte-col">
@@ -302,7 +328,10 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
 
     <!-- ONGLET AMAZON -->
     <div class="tab-panel" id="tab-amazon">
-      <p class="page-title">Tracker Amazon</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <p class="page-title" style="margin-bottom:0;">Tracker Amazon</p>
+        <button class="btn-ghost" onclick="openCatModal('amazon')">⚙ Categories</button>
+      </div>
 
       <!-- ACHATS DU MOIS -->
       <div class="section-card">
@@ -335,8 +364,6 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
 
     </div>
 
-
-
   </div>
 </div>
 
@@ -345,12 +372,59 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
   <div class="budget-modal-box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
       <h3 class="section-title" id="budget-modal-title">Journee</h3>
-      <button class="logout-btn" id="budget-modal-close">x</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-ghost" style="font-size:9px;padding:4px 10px;" onclick="openCatModal('budget')">⚙ Categories</button>
+        <button class="logout-btn" id="budget-modal-close">x</button>
+      </div>
     </div>
     <div id="budget-existing-entries"></div>
     <div id="budget-new-entries"></div>
     <button class="btn-ghost" style="width:100%;margin-top:6px;" onclick="addBudgetEntryRow()">+ Ajouter une depense</button>
     <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="saveBudgetDay()">Sauvegarder</button>
+  </div>
+</div>
+
+<!-- MODAL CATEGORIES -->
+<div class="cat-modal-overlay hidden" id="cat-modal">
+  <div class="cat-modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 class="section-title" id="cat-modal-title">Categories</h3>
+      <button class="logout-btn" onclick="closeCatModal()">x</button>
+    </div>
+    <div id="cat-modal-list"></div>
+    <div class="cat-add-row">
+      <input class="cat-add-input" type="text" id="cat-new-input" placeholder="Nouvelle categorie">
+      <button class="btn-primary" onclick="addCatItem()">+ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAIEMENTS FIXES -->
+<div class="cat-modal-overlay hidden" id="fixed-modal">
+  <div class="cat-modal-box" style="width:400px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 class="section-title">Paiements fixes</h3>
+      <button class="logout-btn" onclick="closeFixedModal()">x</button>
+    </div>
+    <p style="font-size:10px;color:var(--text3);margin-bottom:12px;">Ces paiements apparaissent par defaut chaque mois pour les nouveaux mois.</p>
+
+    <div class="fixed-section-title">American Express</div>
+    <div id="fixed-amex-list"></div>
+    <div class="fixed-add-row" id="fixed-amex-add">
+      <input class="fixed-add-raison" type="text" id="fixed-amex-raison" placeholder="Raison">
+      <input class="fixed-add-amt" type="number" id="fixed-amex-amt" placeholder="0.00">
+      <button class="btn-primary" style="white-space:nowrap;" onclick="addFixedItem('amex')">+</button>
+    </div>
+
+    <div class="fixed-section-title" style="margin-top:16px;">Capital One</div>
+    <div id="fixed-capone-list"></div>
+    <div class="fixed-add-row" id="fixed-capone-add">
+      <input class="fixed-add-raison" type="text" id="fixed-capone-raison" placeholder="Raison">
+      <input class="fixed-add-amt" type="number" id="fixed-capone-amt" placeholder="0.00">
+      <button class="btn-primary" style="white-space:nowrap;" onclick="addFixedItem('capone')">+</button>
+    </div>
+
+    <button class="btn-primary" style="width:100%;margin-top:16px;" onclick="saveFixedPayments()">Sauvegarder</button>
   </div>
 </div>
 
@@ -413,16 +487,17 @@ const DAYS_FR   = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
 const fmtB = v => (v >= 0 ? '' : '-') + Math.abs(v).toFixed(2) + '$';
 const budgetKey = (y, m, d) => `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
-const AMAZON_CATS   = ['Pharmacie','Aliments','Chat','Quincaillerie','Maison','Cadeaux','Activites','Menager','Terrain','Jardinage','LED','Oiseaux','Autre'];
+const DEFAULT_BUDGET_CATS = ['Hypotheque','Marge a tout vielle','Reer','Marge a tout et perso','Hydro','Taxe municipale','Ass. maison','Ass. Eric','Ass. Ryan','Pharmacie','Service de garde','American Express','Capital One','Autre'];
+const DEFAULT_AMAZON_CATS = ['Pharmacie','Aliments','Chat','Quincaillerie','Maison','Cadeaux','Activites','Menager','Terrain','Jardinage','LED','Oiseaux','Autre'];
 
-const AMEX_FIXED   = [
+const DEFAULT_AMEX_FIXED = [
   {date:'',pay:0,dep:120.67,raison:'Bell'},
   {date:'',pay:0,dep:24.13,raison:'Spotify'},
   {date:'',pay:0,dep:399.96,raison:'Amazon'},
   {date:'',pay:0,dep:11.49,raison:'Amazon Prime'},
   {date:'',pay:0,dep:17.25,raison:'Blink'},
 ];
-const CAPONE_FIXED = [
+const DEFAULT_CAPONE_FIXED = [
   {date:'',pay:0,dep:38.58,raison:'Cellulaire'},
   {date:'',pay:0,dep:9.20,raison:'TSN+'},
   {date:'',pay:0,dep:32.19,raison:'Claude IA'},
@@ -439,13 +514,193 @@ let _remainingTotal = 0;
 let _paidTotal = 0;
 let amazonTrackerData = [];
 
+// Categories dynamiques
+let budgetCats  = [...DEFAULT_BUDGET_CATS];
+let amazonCats  = [...DEFAULT_AMAZON_CATS];
+
+// Paiements fixes dynamiques
+let amexFixed   = DEFAULT_AMEX_FIXED.map(r=>({...r}));
+let caponeFixed = DEFAULT_CAPONE_FIXED.map(r=>({...r}));
+
+// Modal categories - contexte courant
+let catModalContext = 'budget';
+
 // ─── LOAD ALL ──────────────────────────────────────────
 async function loadAll() {
+  await loadCategories();
+  await loadFixedPaymentsFromDB();
   await loadBudget();
   renderBudget();
   renderCartes();
   calcAmazonTotal();
 }
+
+// ─── CATEGORIES ────────────────────────────────────────
+async function loadCategories() {
+  try {
+    const snap = await getDoc(doc(db,'users',uid(),'settings','categories'));
+    if (snap.exists()) {
+      const d = snap.data();
+      if (d.budget) budgetCats = JSON.parse(d.budget);
+      if (d.amazon) amazonCats = JSON.parse(d.amazon);
+    }
+  } catch(e) { console.error('loadCategories:', e); }
+}
+
+async function saveCategories() {
+  try {
+    await setDoc(doc(db,'users',uid(),'settings','categories'), {
+      budget: JSON.stringify(budgetCats),
+      amazon: JSON.stringify(amazonCats),
+    });
+  } catch(e) { console.error('saveCategories:', e); }
+}
+
+// ─── MODAL CATEGORIES ──────────────────────────────────
+window.openCatModal = function(context) {
+  catModalContext = context;
+  const title = context === 'budget' ? 'Categories Budget' : 'Categories Amazon';
+  document.getElementById('cat-modal-title').textContent = title;
+  renderCatModalList();
+  document.getElementById('cat-modal').classList.remove('hidden');
+  document.getElementById('cat-new-input').value = '';
+};
+
+window.closeCatModal = function() {
+  document.getElementById('cat-modal').classList.add('hidden');
+};
+
+function renderCatModalList() {
+  const list = document.getElementById('cat-modal-list');
+  const cats = catModalContext === 'budget' ? budgetCats : amazonCats;
+  list.innerHTML = '';
+  cats.forEach((cat, i) => {
+    const row = document.createElement('div');
+    row.className = 'cat-item-row';
+    row.innerHTML = `<span>${cat}</span><button class="cat-item-del" data-idx="${i}">x</button>`;
+    row.querySelector('button').onclick = () => {
+      if (catModalContext === 'budget') budgetCats.splice(i, 1);
+      else amazonCats.splice(i, 1);
+      saveCategories();
+      renderCatModalList();
+    };
+    list.appendChild(row);
+  });
+}
+
+window.addCatItem = function() {
+  const input = document.getElementById('cat-new-input');
+  const val = input.value.trim();
+  if (!val) return;
+  if (catModalContext === 'budget') {
+    if (!budgetCats.includes(val)) budgetCats.push(val);
+  } else {
+    if (!amazonCats.includes(val)) amazonCats.push(val);
+  }
+  saveCategories();
+  renderCatModalList();
+  input.value = '';
+};
+
+document.getElementById('cat-new-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') window.addCatItem();
+});
+
+document.getElementById('cat-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) window.closeCatModal();
+});
+
+// ─── PAIEMENTS FIXES ───────────────────────────────────
+async function loadFixedPaymentsFromDB() {
+  try {
+    const snap = await getDoc(doc(db,'users',uid(),'settings','fixed_payments'));
+    if (snap.exists()) {
+      const d = snap.data();
+      if (d.amex)   amexFixed   = JSON.parse(d.amex);
+      if (d.capone) caponeFixed = JSON.parse(d.capone);
+    }
+  } catch(e) { console.error('loadFixedPayments:', e); }
+}
+
+window.saveFixedPayments = async function() {
+  // Lire les valeurs du modal avant de sauvegarder
+  const amexRows = document.querySelectorAll('#fixed-amex-list .fixed-item-row');
+  amexFixed = [];
+  amexRows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const raison = inputs[0].value.trim();
+    const dep = parseFloat(inputs[1].value) || 0;
+    if (raison) amexFixed.push({date:'', pay:0, dep, raison});
+  });
+
+  const caponeRows = document.querySelectorAll('#fixed-capone-list .fixed-item-row');
+  caponeFixed = [];
+  caponeRows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const raison = inputs[0].value.trim();
+    const dep = parseFloat(inputs[1].value) || 0;
+    if (raison) caponeFixed.push({date:'', pay:0, dep, raison});
+  });
+
+  try {
+    await setDoc(doc(db,'users',uid(),'settings','fixed_payments'), {
+      amex:   JSON.stringify(amexFixed),
+      capone: JSON.stringify(caponeFixed),
+    });
+  } catch(e) { console.error('saveFixedPayments:', e); }
+
+  document.getElementById('fixed-modal').classList.add('hidden');
+};
+
+window.openFixedModal = function() {
+  renderFixedModalList();
+  document.getElementById('fixed-modal').classList.remove('hidden');
+};
+
+window.closeFixedModal = function() {
+  document.getElementById('fixed-modal').classList.add('hidden');
+};
+
+function renderFixedModalList() {
+  const renderList = (containerId, items) => {
+    const cont = document.getElementById(containerId);
+    cont.innerHTML = '';
+    items.forEach((item, i) => {
+      const row = document.createElement('div');
+      row.className = 'fixed-item-row';
+      row.innerHTML = `<input type="text" value="${item.raison}"><input type="number" value="${item.dep}"><button class="fixed-item-del" data-i="${i}">x</button>`;
+      row.querySelector('button').onclick = () => { row.remove(); };
+      cont.appendChild(row);
+    });
+  };
+  renderList('fixed-amex-list', amexFixed);
+  renderList('fixed-capone-list', caponeFixed);
+  document.getElementById('fixed-amex-raison').value = '';
+  document.getElementById('fixed-amex-amt').value = '';
+  document.getElementById('fixed-capone-raison').value = '';
+  document.getElementById('fixed-capone-amt').value = '';
+}
+
+window.addFixedItem = function(carte) {
+  const raisonId = `fixed-${carte}-raison`;
+  const amtId    = `fixed-${carte}-amt`;
+  const listId   = `fixed-${carte}-list`;
+  const raison = document.getElementById(raisonId).value.trim();
+  const dep    = parseFloat(document.getElementById(amtId).value) || 0;
+  if (!raison) return;
+  const cont = document.getElementById(listId);
+  const row = document.createElement('div');
+  row.className = 'fixed-item-row';
+  row.innerHTML = `<input type="text" value="${raison}"><input type="number" value="${dep}"><button class="fixed-item-del">x</button>`;
+  row.querySelector('button').onclick = () => { row.remove(); };
+  cont.appendChild(row);
+  document.getElementById(raisonId).value = '';
+  document.getElementById(amtId).value = '';
+};
+
+document.getElementById('fixed-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) window.closeFixedModal();
+});
 
 // ─── BUDGET ────────────────────────────────────────────
 async function loadBudget() {
@@ -470,14 +725,13 @@ async function loadBudget() {
   await loadAmazonTracker();
 }
 
-async function saveBudgetSettings() {
+window.saveSolde = async function() {
   try {
     await setDoc(doc(db,'users',uid(),'settings','budget'), {
-      salary: _budgetSettings.salary,
-      solde:  _budgetSettings.solde
+      solde: parseFloat(document.getElementById('b-solde-input')?.value)||0
     });
   } catch(e) { console.error(e); }
-}
+};
 
 // ─── CARTES ────────────────────────────────────────────
 async function loadCartes() {
@@ -495,13 +749,13 @@ async function loadCartes() {
       if (amexLimEl   && d.amexLimite)   amexLimEl.value   = d.amexLimite;
       if (caponeLimEl && d.caponeLimite) caponeLimEl.value = d.caponeLimite;
     } else {
-      cartesData.amex   = AMEX_FIXED.map(r=>({...r}));
-      cartesData.capone = CAPONE_FIXED.map(r=>({...r}));
+      cartesData.amex   = amexFixed.map(r=>({...r}));
+      cartesData.capone = caponeFixed.map(r=>({...r}));
       cartesData.amazon = [];
     }
   } catch(e) {
-    cartesData.amex   = AMEX_FIXED.map(r=>({...r}));
-    cartesData.capone = CAPONE_FIXED.map(r=>({...r}));
+    cartesData.amex   = amexFixed.map(r=>({...r}));
+    cartesData.capone = caponeFixed.map(r=>({...r}));
     cartesData.amazon = [];
   }
 }
@@ -584,14 +838,6 @@ function calcArgentRestant() {
 }
 window.calcArgentRestant = calcArgentRestant;
 
-window.saveSolde = async function() {
-  try {
-    await setDoc(doc(db,'users',uid(),'settings','budget'), {
-      solde: parseFloat(document.getElementById('b-solde-input')?.value)||0
-    });
-  } catch(e) { console.error(e); }
-};
-
 function renderNextPayments() {
   const el = document.getElementById('next-payments-list');
   if (!el) return;
@@ -635,8 +881,7 @@ window.openBudgetDay = openBudgetDay;
 window.addBudgetEntryRow = function() {
   const cont = document.getElementById('budget-new-entries');
   const row = document.createElement('div'); row.className='budget-entry-row';
-  const cats = ['Hypotheque','Marge a tout vielle','Reer','Marge a tout et perso','Hydro','Taxe municipale','Ass. maison','Ass. Eric','Ass. Ryan','Pharmacie','Service de garde','American Express','Capital One','Autre'];
-  row.innerHTML = `<select class="budget-entry-select">${cats.map(c=>`<option>${c}</option>`).join('')}</select><input type="number" class="budget-entry-amt" placeholder="0.00">`;
+  row.innerHTML = `<select class="budget-entry-select">${budgetCats.map(c=>`<option>${c}</option>`).join('')}</select><input type="number" class="budget-entry-amt" placeholder="0.00">`;
   cont.appendChild(row);
 };
 
@@ -770,7 +1015,6 @@ window.loadAnnualSummary = async function() {
       const allRows=[...JSON.parse(d.amex||'[]'),...JSON.parse(d.capone||'[]')];
       allRows.forEach(r=>{ const dep=parseFloat(r.dep)||0; if(dep<=0)return; const raison=r.raison||'Autre'; if(!groups[raison])groups[raison]=0; groups[raison]+=dep; monthTotal+=dep; });
 
-      // Tracker Amazon du même mois
       const amazonKey = `amazon_${year}_${String(m+1).padStart(2,'0')}`;
       try {
         const asnap = await getDoc(doc(db,'users',uid(),'settings',amazonKey));
@@ -834,7 +1078,7 @@ function makeAmazonRow(desc='', cat='Autre', amt='', idx=0) {
   const cont = document.getElementById('amazon-tracker-rows');
   if (!cont) return;
   const div = document.createElement('div'); div.className='amazon-tracker-row'; div.dataset.idx=idx;
-  div.innerHTML=`<input type="text" placeholder="Description" value="${desc}"><select>${AMAZON_CATS.map(c=>`<option${c===cat?' selected':''}>${c}</option>`).join('')}</select><input type="number" placeholder="0.00" value="${amt||''}"><button class="amazon-del-btn">x</button>`;
+  div.innerHTML=`<input type="text" placeholder="Description" value="${desc}"><select>${amazonCats.map(c=>`<option${c===cat?' selected':''}>${c}</option>`).join('')}</select><input type="number" placeholder="0.00" value="${amt||''}"><button class="amazon-del-btn">x</button>`;
   const inputs = div.querySelectorAll('input');
   const catSel = div.querySelector('select');
   const delBtn = div.querySelector('button');
@@ -856,7 +1100,6 @@ function calcAmazonTotal() {
   const el = document.getElementById('amazon-grand-total');
   if (el) el.textContent=total.toFixed(2)+'$';
 
-  // Resume par categorie — liste
   const bycat={};
   amazonTrackerData.forEach(r=>{ const c=r.cat||'Autre'; if(!bycat[c])bycat[c]=0; bycat[c]+=parseFloat(r.amt)||0; });
   const entries=Object.entries(bycat).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
@@ -871,7 +1114,6 @@ function calcAmazonTotal() {
     }
   }
 
-  // Graphique tarte
   const PIE_COLORS = ['#B0B8C4','#707C8C','#404A58','#34C472','#F4A623','#F06060','#60A5FA','#a855f7','#2DD4BF','#C2714F'];
   const canvas = document.getElementById('amazon-pie-chart');
   if (canvas && entries.length) {
