@@ -330,7 +330,10 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
     <div class="tab-panel" id="tab-amazon">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
         <p class="page-title" style="margin-bottom:0;">Tracker Amazon</p>
-        <button class="btn-ghost" onclick="openCatModal('amazon')">⚙ Categories</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-ghost" onclick="openFixAutreModal()">✏ Corriger les Autre</button>
+          <button class="btn-ghost" onclick="openCatModal('amazon')">⚙ Categories</button>
+        </div>
       </div>
 
       <!-- ACHATS DU MOIS -->
@@ -404,6 +407,22 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
     <div class="cat-add-row">
       <input class="cat-add-input" type="text" id="cat-new-input" placeholder="Nouvelle categorie">
       <button class="btn-primary" onclick="addCatItem()">+ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CORRIGER LES AUTRE -->
+<div class="cat-modal-overlay hidden" id="fix-autre-modal">
+  <div class="cat-modal-box" style="width:480px;max-height:85vh;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h3 class="section-title">Corriger les "Autre"</h3>
+      <button class="logout-btn" onclick="closeFixAutreModal()">x</button>
+    </div>
+    <p style="font-size:10px;color:var(--text3);margin-bottom:14px;">Tous tes achats categorises "Autre" de l annee. Reassigne la categorie et clique Sauvegarder.</p>
+    <div id="fix-autre-list" style="max-height:50vh;overflow-y:auto;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:8px;">
+      <span id="fix-autre-count" style="font-size:10px;color:var(--text3);"></span>
+      <button class="btn-primary" onclick="saveFixAutre()">Sauvegarder tout</button>
     </div>
   </div>
 </div>
@@ -709,6 +728,9 @@ window.addFixedItem = function(carte) {
 
 document.getElementById('fixed-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) window.closeFixedModal();
+});
+document.getElementById('fix-autre-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) window.closeFixAutreModal();
 });
 
 // ─── BUDGET ────────────────────────────────────────────
@@ -1195,6 +1217,95 @@ window.loadAmazonAnnualSummary = async function() {
   }
   el.innerHTML=html;
   if (btn) { btn.textContent='Actualiser'; btn.disabled=false; }
+};
+
+// ─── CORRIGER LES AUTRE ────────────────────────────────
+let fixAutreData = []; // [{monthKey, idx, desc, cat, amt}]
+
+window.openFixAutreModal = async function() {
+  const modal = document.getElementById('fix-autre-modal');
+  const list  = document.getElementById('fix-autre-list');
+  const count = document.getElementById('fix-autre-count');
+  list.innerHTML = '<p style="font-size:11px;color:var(--text3);padding:8px 0;">Chargement...</p>';
+  count.textContent = '';
+  modal.classList.remove('hidden');
+
+  fixAutreData = [];
+  const year = amazonYear;
+  for (let m=0; m<12; m++) {
+    const key = `amazon_${year}_${String(m+1).padStart(2,'0')}`;
+    try {
+      const snap = await getDoc(doc(db,'users',uid(),'settings',key));
+      if (!snap.exists()) continue;
+      const rows = JSON.parse(snap.data().rows||'[]');
+      rows.forEach((r,i)=>{
+        if ((r.cat||'Autre')==='Autre') {
+          fixAutreData.push({monthKey:key, month:m, idx:i, desc:r.desc||'', cat:'Autre', amt:parseFloat(r.amt)||0});
+        }
+      });
+    } catch(e) {}
+  }
+
+  if (!fixAutreData.length) {
+    list.innerHTML = '<p style="font-size:11px;color:var(--text3);padding:8px 0;">Aucun achat "Autre" trouve pour '+year+'.</p>';
+    return;
+  }
+
+  count.textContent = fixAutreData.length + ' achat(s) a corriger';
+  list.innerHTML = '';
+
+  // En-tete
+  const head = document.createElement('div');
+  head.style.cssText = 'display:grid;grid-template-columns:1fr 140px 70px;gap:8px;padding:0 0 6px;border-bottom:2px solid var(--border2);margin-bottom:4px;font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;';
+  head.innerHTML = '<span>Description</span><span>Categorie</span><span style="text-align:right;">Montant</span>';
+  list.appendChild(head);
+
+  fixAutreData.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 140px 70px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);';
+    const monthLabel = MONTHS_FR[item.month];
+    row.innerHTML = `
+      <span style="font-size:11px;color:var(--text2);">${item.desc||'<span style="color:var(--text3);">sans description</span>'} <span style="font-size:9px;color:var(--text3);">${monthLabel}</span></span>
+      <select data-i="${i}" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:DM Mono,monospace;font-size:10px;padding:4px 6px;outline:none;">${amazonCats.map(c=>`<option${c==='Autre'?' selected':''}>${c}</option>`).join('')}</select>
+      <span style="text-align:right;font-size:11px;color:#F06060;font-family:DM Mono,monospace;">${item.amt.toFixed(2)}$</span>
+    `;
+    row.querySelector('select').onchange = e => { fixAutreData[i].cat = e.target.value; };
+    list.appendChild(row);
+  });
+};
+
+window.closeFixAutreModal = function() {
+  document.getElementById('fix-autre-modal').classList.add('hidden');
+  fixAutreData = [];
+};
+
+window.saveFixAutre = async function() {
+  const btn = document.querySelector('#fix-autre-modal .btn-primary');
+  if (btn) { btn.textContent = 'Sauvegarde...'; btn.disabled = true; }
+
+  // Grouper par monthKey pour lire/modifier chaque doc une seule fois
+  const byKey = {};
+  fixAutreData.forEach(item => {
+    if (!byKey[item.monthKey]) byKey[item.monthKey] = [];
+    byKey[item.monthKey].push(item);
+  });
+
+  for (const [key, items] of Object.entries(byKey)) {
+    try {
+      const snap = await getDoc(doc(db,'users',uid(),'settings',key));
+      if (!snap.exists()) continue;
+      const rows = JSON.parse(snap.data().rows||'[]');
+      items.forEach(item => { if (rows[item.idx]) rows[item.idx].cat = item.cat; });
+      await setDoc(doc(db,'users',uid(),'settings',key), { rows: JSON.stringify(rows) });
+    } catch(e) { console.error('saveFixAutre:', e); }
+  }
+
+  // Recharger le mois courant si parmi les modifies
+  const currentKey = amazonMonthKey();
+  if (byKey[currentKey]) await loadAmazonTracker();
+
+  window.closeFixAutreModal();
+  if (btn) { btn.textContent = 'Sauvegarder tout'; btn.disabled = false; }
 };
 
 // ─── BILAN ─────────────────────────────────────────────
