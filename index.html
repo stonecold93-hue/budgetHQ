@@ -362,6 +362,15 @@ html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color
         </div>
       </div>
 
+      <!-- RESUME ANNUEL AMAZON -->
+      <div class="section-card">
+        <div class="section-top">
+          <h2 class="section-title">Resume annuel Amazon</h2>
+          <button class="btn-ghost" id="load-amazon-annual-btn" onclick="loadAmazonAnnualSummary()">Charger</button>
+        </div>
+        <div id="amazon-annual-content"><p style="font-size:11px;color:var(--text3);">Clique sur Charger pour voir toutes les categories de l annee.</p></div>
+      </div>
+
     </div>
 
   </div>
@@ -1137,6 +1146,56 @@ function calcAmazonTotal() {
   }
 }
 window.calcAmazonTotal = calcAmazonTotal;
+
+// ─── RESUME ANNUEL AMAZON ──────────────────────────────
+window.loadAmazonAnnualSummary = async function() {
+  const btn = document.getElementById('load-amazon-annual-btn');
+  const el  = document.getElementById('amazon-annual-content');
+  if (!el) return;
+  if (btn) { btn.textContent='Chargement...'; btn.disabled=true; }
+  const year = amazonYear;
+  const groups={}, byMonth={};
+  for (let m=0; m<12; m++) {
+    const key = `amazon_${year}_${String(m+1).padStart(2,'0')}`;
+    try {
+      const snap = await getDoc(doc(db,'users',uid(),'settings',key));
+      if (!snap.exists()) continue;
+      const rows = JSON.parse(snap.data().rows||'[]');
+      let monthTotal=0;
+      rows.forEach(r=>{
+        const amt=parseFloat(r.amt)||0;
+        if(amt<=0) return;
+        const cat=r.cat||'Autre';
+        if(!groups[cat]) groups[cat]=0;
+        groups[cat]+=amt;
+        monthTotal+=amt;
+      });
+      if (monthTotal>0) byMonth[m]=monthTotal;
+    } catch(e) {}
+  }
+  const entries=Object.entries(groups).sort((a,b)=>b[1]-a[1]);
+  const total=entries.reduce((s,[,v])=>s+v,0);
+  if (!entries.length) {
+    el.innerHTML='<p style="font-size:11px;color:var(--text3);">Aucun achat Amazon pour '+year+'.</p>';
+    if(btn){btn.textContent='Charger';btn.disabled=false;}
+    return;
+  }
+  let html=`<div style="display:grid;grid-template-columns:1fr 90px 60px;gap:4px;padding:0 0 6px;border-bottom:2px solid var(--border2);margin-bottom:4px;font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;"><span>Categorie</span><span style="text-align:right;">Total</span><span style="text-align:right;">%</span></div>`;
+  entries.forEach(([cat,amt])=>{
+    const pct=total>0?Math.round(amt/total*100):0;
+    html+=`<div style="display:grid;grid-template-columns:1fr 90px 60px;gap:4px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${cat}</span><span style="text-align:right;color:#F06060;font-family:DM Mono,monospace;">${amt.toFixed(2)}$</span><span style="text-align:right;color:var(--text3);font-family:DM Mono,monospace;">${pct}%</span></div>`;
+  });
+  html+=`<div style="display:grid;grid-template-columns:1fr 90px 60px;gap:4px;padding:8px 0 0;font-size:11px;border-top:2px solid var(--border2);margin-top:4px;"><span style="color:var(--text);">Total ${year}</span><span style="text-align:right;color:#F06060;font-family:DM Mono,monospace;">${total.toFixed(2)}$</span><span></span></div>`;
+  if (Object.keys(byMonth).length) {
+    html+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);"><div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Par mois</div>`;
+    Object.entries(byMonth).sort((a,b)=>a[0]-b[0]).forEach(([m,amt])=>{
+      html+=`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${MONTHS_FR[m]}</span><span style="color:#F06060;font-family:DM Mono,monospace;">${amt.toFixed(2)}$</span></div>`;
+    });
+    html+='</div>';
+  }
+  el.innerHTML=html;
+  if (btn) { btn.textContent='Actualiser'; btn.disabled=false; }
+};
 
 // ─── BILAN ─────────────────────────────────────────────
 window.addBudgetRow = function(containerId, isPos) {
