@@ -1,20 +1,17 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark">
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BudgetHQ</title>
-<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjRkZGRkZGIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNDAlIiBzdG9wLWNvbG9yPSIjRThFQUVEIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNzAlIiBzdG9wLWNvbG9yPSIjQjBCOEM0Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzcwN0M4QyIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzA4MEEwRSIvPgogIDx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsc2VyaWYiIGZvbnQtc2l6ZT0iMTMiIGZvbnQtd2VpZ2h0PSI3MDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9InVybCgjZykiPiRIUTwvdGV4dD4KPC9zdmc+Cg==" type="image/svg+xml">
-<script>
-try{var t=localStorage.getItem("khq_theme");document.documentElement.setAttribute("data-theme",t==="light"?"light":"dark");}catch(e){document.documentElement.setAttribute("data-theme","dark");}
-</script>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300;1,600&family=DM+Mono:wght@300;400&family=Just+Another+Hand&display=swap" rel="stylesheet">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300;1,600&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --c1:#E8EAED;--c2:#B0B8C4;--c3:#707C8C;--c4:#404A58;--c5:#1e2430;
-  --bg:#000000;--bg2:#0f1118;--bg3:#161922;
+  --bg:#080A0E;--bg2:#0f1118;--bg3:#161922;
   --text:#ffffff;--text2:#a0a0a0;--text3:#555555;
   --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.15);
   --teal:#34C472;--teal-dim:#1a3d28;--coral:#C2714F;--coral-dim:#3d2018;
@@ -22,10 +19,6 @@ try{var t=localStorage.getItem("khq_theme");document.documentElement.setAttribut
   --radius:12px;--radius-sm:8px;--transition:0.2s ease;
 }
 html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);overflow:hidden;}
-html[data-theme="light"]{--bg:#FFFFFF;--bg2:#E0F4FF;--bg3:#E0F4FF;--text:#000000;--text2:#555555;--text3:#555555;}
-.ico-sun{display:flex;}.ico-moon{display:none;}
-html[data-theme="light"] .ico-sun{display:none;}
-html[data-theme="light"] .ico-moon{display:flex;}
 .hidden{display:none!important;}
 
 /* LOGIN */
@@ -35,12 +28,12 @@ html[data-theme="light"] .ico-moon{display:flex;}
 .login-card{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:28px;padding:56px 48px;border:1px solid var(--border2);border-radius:20px;background:rgba(8,10,14,.6);backdrop-filter:blur(20px);text-align:center;}
 .logo-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;}
 .orn{display:flex;align-items:center;gap:12px;}
-.ol{width:48px;height:.5px;background:#F4A623;}
-.og{width:6px;height:6px;transform:rotate(45deg);flex-shrink:0;background:#F4A623;}
+.ol{width:48px;height:.5px;background:var(--c4);}
+.og{width:6px;height:6px;transform:rotate(45deg);flex-shrink:0;background:var(--c2);}
 .logo-title{display:flex;align-items:baseline;}
-.wn{font-family:'Cormorant Garamond',serif;font-weight:300;font-style:italic;font-size:52px;line-height:1;background:linear-gradient(170deg,#FFFBF0,#F9E07F,#F4A623,#C47D0E,#8A5600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.vs{width:.5px;height:40px;margin:0 14px;align-self:center;background:var(--text);}
-.hq{font-family:'Just Another Hand',cursive;font-size:24px;transform:rotate(-2deg);display:inline-block;color:var(--text);}
+.wn{font-family:'Cormorant Garamond',serif;font-weight:300;font-style:italic;font-size:52px;line-height:1;background:linear-gradient(160deg,var(--c1),var(--c2),var(--c3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.vs{width:.5px;height:40px;margin:0 14px;align-self:center;background:linear-gradient(180deg,transparent,var(--c4),transparent);}
+.hq{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:52px;letter-spacing:.08em;line-height:1;background:linear-gradient(160deg,#FFFFFF,var(--c1),var(--c2),var(--c3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .sub{font-family:'DM Mono',monospace;font-weight:300;font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--c4);}
 .google-btn{display:flex;align-items:center;gap:10px;padding:12px 24px;background:rgba(176,184,196,.1);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--c1);font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.15em;cursor:pointer;transition:all var(--transition);}
 .google-btn:hover{background:rgba(176,184,196,.2);border-color:var(--c3);transform:translateY(-1px);}
@@ -48,14 +41,10 @@ html[data-theme="light"] .ico-moon{display:flex;}
 /* APP */
 .app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
 .topnav{display:flex;align-items:center;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;height:52px;flex-shrink:0;}
-.topnav-logo{display:flex;align-items:center;gap:8px;margin-right:24px;flex-shrink:0;}
-.orn-sm{display:flex;align-items:center;gap:6px;}
-.ol-sm{width:20px;height:.5px;background:#F4A623;}
-.og-sm{width:4px;height:4px;transform:rotate(45deg);flex-shrink:0;background:#F4A623;}
-.logo-title-sm{display:flex;align-items:baseline;}
-.wn-sm{font-family:'Cormorant Garamond',serif;font-weight:300;font-style:italic;font-size:22px;background:linear-gradient(170deg,#FFFBF0,#F9E07F,#F4A623,#C47D0E,#8A5600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.vs-sm{width:.5px;height:16px;margin:0 6px;align-self:center;background:var(--text);}
-.hq-sm{font-family:'Just Another Hand',cursive;font-size:24px;transform:rotate(-2deg);display:inline-block;color:var(--text);}
+.topnav-logo{display:flex;align-items:center;margin-right:24px;flex-shrink:0;}
+.nav-golden{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:15px;letter-spacing:.2em;background:linear-gradient(170deg,#FFFBF0,#F9E07F,#F4A623,#C47D0E);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.nav-sep{width:.5px;height:18px;background:rgba(138,86,0,0.35);margin:0 10px;align-self:center;}
+.nav-site{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:15px;letter-spacing:.15em;color:#B0B8C4;}
 .topnav-user{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0;}
 .user-avatar{width:28px;height:28px;border-radius:50%;border:1px solid var(--border2);}
 .logout-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text3);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;padding:4px 10px;cursor:pointer;transition:all var(--transition);}
@@ -99,7 +88,7 @@ html[data-theme="light"] .ico-moon{display:flex;}
 .budget-day-num{font-size:11px;color:var(--text2);margin-bottom:3px;}
 .budget-cal-day.today .budget-day-num{color:var(--c2);font-weight:500;}
 .budget-dep-tag{font-size:8px;padding:1px 4px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.budget-dep-tag.fixe{background:rgba(24,95,165,.2);color:#2389D4;}
+.budget-dep-tag.fixe{background:rgba(24,95,165,.2);color:#5AB4F0;}
 .budget-dep-tag.carte{background:rgba(186,117,23,.2);color:var(--amber);}
 .budget-dep-tag.autre{background:rgba(255,255,255,.06);color:var(--text3);}
 .budget-day-total{font-size:9px;color:#F06060;font-weight:500;margin-top:2px;}
@@ -122,7 +111,7 @@ html[data-theme="light"] .ico-moon{display:flex;}
 .cartes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
 .carte-col{border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;}
 .carte-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:11px;letter-spacing:.1em;}
-.amex-header{background:linear-gradient(135deg,#000000,#141820);border-bottom:1px solid rgba(176,184,196,.3);}
+.amex-header{background:linear-gradient(135deg,#080A0E,#141820);border-bottom:1px solid rgba(176,184,196,.3);}
 .capone-header{background:linear-gradient(135deg,#1a1000,#3d2900);border-bottom:1px solid rgba(244,166,35,.3);}
 .amazon-header{background:linear-gradient(135deg,#0d1a0d,#1a3500);border-bottom:1px solid rgba(52,196,114,.2);}
 .carte-name{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:14px;letter-spacing:.1em;color:var(--text);}
@@ -200,7 +189,7 @@ html[data-theme="light"] .ico-moon{display:flex;}
   <div class="login-card">
     <div class="logo-wrap">
       <div class="orn"><div class="ol"></div><div class="og"></div><div class="ol"></div></div>
-      <div class="logo-title"><span class="wn">Golden</span><div class="vs"></div><span class="hq">BudgetHQ</span></div>
+      <div class="logo-title"><span class="wn">Budget</span><div class="vs"></div><span class="hq">HQ</span></div>
       <span class="sub">Finances, organisees.</span>
     </div>
     <button class="google-btn" id="google-login-btn">
@@ -214,20 +203,13 @@ html[data-theme="light"] .ico-moon{display:flex;}
 <div class="app hidden" id="app">
   <nav class="topnav">
     <div class="topnav-logo">
-      <div class="orn-sm"><div class="ol-sm"></div><div class="og-sm"></div></div>
-      <div class="logo-title-sm">
-        <span class="wn-sm">Golden</span>
-        <div class="vs-sm"></div>
-        <span class="hq-sm">BudgetHQ</span>
-      </div>
+      <span class="nav-golden">Golden</span>
+      <div class="nav-sep"></div>
+      <span class="nav-site">BudgetHQ</span>
     </div>
     <div class="topnav-user">
       <img class="user-avatar" id="user-avatar" src="" alt="">
       <span style="font-size:11px;color:var(--text2);" id="user-name"></span>
-      <button onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text3);padding:4px 8px;cursor:pointer;display:flex;align-items:center;" title="Theme">
-        <span class="ico-sun"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span>
-        <span class="ico-moon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
-      </button>
       <button class="logout-btn" id="logout-btn">Deconnexion</button>
     </div>
   </nav>
@@ -1171,7 +1153,7 @@ function calcAmazonTotal() {
       type:'doughnut',
       data:{
         labels: entries.map(([c])=>c),
-        datasets:[{ data: entries.map(([,v])=>v), backgroundColor: entries.map((_,i)=>PIE_COLORS[i%PIE_COLORS.length]), borderColor:'#000000', borderWidth:2 }]
+        datasets:[{ data: entries.map(([,v])=>v), backgroundColor: entries.map((_,i)=>PIE_COLORS[i%PIE_COLORS.length]), borderColor:'#080A0E', borderWidth:2 }]
       },
       options:{
         responsive:true, maintainAspectRatio:true,
@@ -1347,15 +1329,6 @@ function calcBudgetBilan() {
   const vn=document.getElementById('b-valeur-nette');
   if (vn){ vn.textContent=fmtB(actifs-dettes); vn.style.color=(actifs-dettes)>=0?'var(--teal)':'#F06060'; }
 }
-
-// ─── THEME TOGGLE ─────────────────────────────────────
-window.toggleTheme = function() {
-  const html = document.documentElement;
-  const current = html.getAttribute('data-theme');
-  const next = current === 'light' ? 'dark' : 'light';
-  html.setAttribute('data-theme', next);
-  try { localStorage.setItem('khq_theme', next); } catch(e) {}
-};
 
 // ─── NAV ───────────────────────────────────────────────
 document.getElementById('budget-prev')?.addEventListener('click', async()=>{ budgetMonth--; if(budgetMonth<0){budgetMonth=11;budgetYear--;} await loadCartes(); renderBudget(); renderCartes(); });
