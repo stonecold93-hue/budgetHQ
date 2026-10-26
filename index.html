@@ -32,7 +32,7 @@ html[data-theme="light"] .ico-moon{display:flex;}
 .login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;}
 .login-bg{position:absolute;inset:0;background:var(--bg);}
 .login-bg::before{content:'';position:absolute;width:80vw;height:80vw;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,var(--c2),transparent);opacity:.07;}
-.login-card{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:28px;padding:56px 48px;border:1px solid var(--border2);border-radius:20px;background:rgba(0,20,40,.6);backdrop-filter:blur(20px);text-align:center;}
+.login-card{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:28px;padding:56px 48px;border:1px solid #8A5600;border-radius:20px;background:rgba(0,20,40,.6);backdrop-filter:blur(20px);text-align:center;box-shadow:0 0 60px rgba(244,166,35,0.08);}
 .logo-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;}
 .login-note{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:16px;color:var(--c2);opacity:.6;letter-spacing:.05em;}
 .login-tagline{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:var(--c4);}
@@ -240,9 +240,8 @@ html[data-theme="light"] .ico-moon{display:flex;}
       <div class="section-card">
         <div class="section-top">
           <h2 class="section-title">Resume annuel</h2>
-          <button class="btn-ghost" id="load-annual-btn" onclick="loadAnnualSummary()">Charger</button>
         </div>
-        <div id="annual-summary-content"><p style="font-size:11px;color:var(--text3);">Clique sur Charger pour voir tous les mois.</p></div>
+        <div id="annual-summary-content"><p style="font-size:11px;color:var(--text3);">Chargement...</p></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
         <div class="section-card">
@@ -517,6 +516,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'accueil') window.loadAnnualSummary();
   });
 });
 
@@ -1041,47 +1041,69 @@ function renderCartesCatSummary() {
 
 // ─── MY YEAR ───────────────────────────────────────────
 window.loadAnnualSummary = async function() {
-  const btn = document.getElementById('load-annual-btn');
-  const el  = document.getElementById('annual-summary-content');
+  const el = document.getElementById('annual-summary-content');
   if (!el) return;
-  if (btn) { btn.textContent='Chargement...'; btn.disabled=true; }
   const year = new Date().getFullYear();
-  const groups={}, byMonth={};
-  for (let m=0; m<12; m++) {
-    const key = `cartes_${year}_${String(m+1).padStart(2,'0')}`;
-    try {
-      const snap = await getDoc(doc(db,'users',uid(),'settings',key));
-      if (!snap.exists()) continue;
-      const d = snap.data();
-      let monthTotal=0;
-      const allRows=[...JSON.parse(d.amex||'[]'),...JSON.parse(d.capone||'[]')];
-      allRows.forEach(r=>{ const dep=parseFloat(r.dep)||0; if(dep<=0)return; const raison=r.raison||'Autre'; if(!groups[raison])groups[raison]=0; groups[raison]+=dep; monthTotal+=dep; });
+  const CARD_PAY_CATS = ['American Express','Capital One'];
+  const bank = {}, cards = {}, byMonth = {};
+  let bankTotal = 0, cardsTotal = 0;
+  const addMonth = (m, v) => { byMonth[m] = (byMonth[m]||0) + v; };
 
-      const amazonKey = `amazon_${year}_${String(m+1).padStart(2,'0')}`;
-      try {
-        const asnap = await getDoc(doc(db,'users',uid(),'settings',amazonKey));
-        if (asnap.exists()) {
-          const arows = JSON.parse(asnap.data().rows||'[]');
-          arows.forEach(r=>{ const amt=parseFloat(r.amt)||0; if(amt<=0)return; const raison=r.cat||'Autre'; if(!groups[raison])groups[raison]=0; groups[raison]+=amt; monthTotal+=amt; });
-        }
-      } catch(e) {}
+  // Compte bancaire : calendrier Budget (sans les paiements de cartes, deja comptes dans les cartes)
+  Object.entries(budgetData).forEach(([k, entries]) => {
+    if (k.slice(0,4) !== String(year)) return;
+    const m = parseInt(k.slice(5,7),10) - 1;
+    entries.forEach(e => {
+      const amt = parseFloat(e.amt)||0;
+      if (amt<=0 || CARD_PAY_CATS.includes(e.cat)) return;
+      const c = e.cat||'Autre';
+      bank[c] = (bank[c]||0) + amt; bankTotal += amt; addMonth(m, amt);
+    });
+  });
 
-      if (monthTotal>0) byMonth[m]=monthTotal;
-    } catch(e) {}
-  }
-  const entries=Object.entries(groups).sort((a,b)=>b[1]-a[1]);
-  const total=entries.reduce((s,[,v])=>s+v,0);
-  if (!entries.length) { el.innerHTML='<p style="font-size:11px;color:var(--text3);">Aucune donnee.</p>'; if(btn){btn.textContent='Charger';btn.disabled=false;} return; }
-  let html=`<div style="display:grid;grid-template-columns:1fr 90px 60px;gap:4px;padding:0 0 6px;border-bottom:2px solid var(--border2);margin-bottom:4px;font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;"><span>Raison</span><span style="text-align:right;">Total</span><span style="text-align:right;">%</span></div>`;
-  entries.forEach(([raison,amt])=>{ const pct=total>0?Math.round(amt/total*100):0; html+=`<div style="display:grid;grid-template-columns:1fr 90px 60px;gap:4px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${raison}</span><span style="text-align:right;color:#F06060;font-family:DM Mono,monospace;">${amt.toFixed(2)}$</span><span style="text-align:right;color:var(--text3);font-family:DM Mono,monospace;">${pct}%</span></div>`; });
-  html+=`<div style="display:grid;grid-template-columns:1fr 90px 60px;gap:4px;padding:8px 0 0;font-size:11px;font-weight:600;border-top:2px solid var(--border2);margin-top:4px;"><span style="color:var(--text);">Total annuel</span><span style="text-align:right;color:#F06060;font-family:DM Mono,monospace;">${total.toFixed(2)}$</span><span></span></div>`;
-  if (Object.keys(byMonth).length) {
-    html+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);"><div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Par mois</div>`;
-    Object.entries(byMonth).forEach(([m,amt])=>{ html+=`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${MONTHS_FR[m]}</span><span style="color:#F06060;font-family:DM Mono,monospace;">${amt.toFixed(2)}$</span></div>`; });
-    html+='</div>';
-  }
-  el.innerHTML=html;
-  if (btn) { btn.textContent='Actualiser'; btn.disabled=false; }
+  // Cartes de credit : Amex + Capital One + Amazon
+  const docs = await Promise.all([...Array(12).keys()].map(async m => {
+    const mm = String(m+1).padStart(2,'0');
+    let cartes = null, amz = null;
+    try { const s = await getDoc(doc(db,'users',uid(),'settings',`cartes_${year}_${mm}`)); if (s.exists()) cartes = s.data(); } catch(e) {}
+    try { const s = await getDoc(doc(db,'users',uid(),'settings',`amazon_${year}_${mm}`)); if (s.exists()) amz = s.data(); } catch(e) {}
+    return {m, cartes, amz};
+  }));
+  docs.forEach(({m, cartes, amz}) => {
+    let amzRows = [];
+    try { amzRows = amz ? JSON.parse(amz.rows||'[]') : []; } catch(e) {}
+    const amzTotal = amzRows.reduce((t,r)=>t+(parseFloat(r.amt)||0),0);
+    if (cartes) {
+      let rows = [];
+      try { rows = [...JSON.parse(cartes.amex||'[]'), ...JSON.parse(cartes.capone||'[]')]; } catch(e) {}
+      rows.forEach(r => {
+        const dep = parseFloat(r.dep)||0;
+        if (dep<=0) return;
+        const raison = r.raison||'Autre';
+        if (raison==='Amazon' && amzTotal>0) return; // le detail Amazon vient du tracker, pas de double compte
+        cards[raison] = (cards[raison]||0) + dep; cardsTotal += dep; addMonth(m, dep);
+      });
+    }
+    if (amzTotal>0) { cards['Amazon'] = (cards['Amazon']||0) + amzTotal; cardsTotal += amzTotal; addMonth(m, amzTotal); }
+  });
+
+  const total = bankTotal + cardsTotal;
+  if (total<=0) { el.innerHTML='<p style="font-size:11px;color:var(--text3);">Aucune donnee.</p>'; return; }
+  const money = v => v.toFixed(2)+'$';
+  const rowHtml = (label, amt) => {
+    const pct = total>0 ? Math.round(amt/total*100) : 0;
+    return `<div style="display:grid;grid-template-columns:1fr 100px 60px;gap:4px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${label}</span><span style="text-align:right;color:#F06060;font-family:DM Mono,monospace;">${money(amt)}</span><span style="text-align:right;color:var(--text3);font-family:DM Mono,monospace;">${pct}%</span></div>`;
+  };
+  const headHtml = t => `<div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 6px;">${t}</div>`;
+  const list = obj => Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v])=>rowHtml(k,v)).join('');
+  const stat = (v,label,color) => `<div class="stat-card"><span class="stat-value" style="color:${color};">${money(v)}</span><span class="stat-label">${label}</span></div>`;
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:6px;">${stat(bankTotal,'Compte bancaire','var(--c2)')}${stat(cardsTotal,'Cartes de credit','var(--c2)')}${stat(total,'Total general','#F06060')}</div>`;
+  html += headHtml('Compte bancaire (par categorie)') + list(bank);
+  html += headHtml('Cartes de credit (par raison)') + list(cards);
+  html += headHtml('Par mois') + Object.keys(byMonth).map(Number).sort((a,b)=>a-b).map(m=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${MONTHS_FR[m]}</span><span style="color:#F06060;font-family:DM Mono,monospace;">${money(byMonth[m])}</span></div>`).join('');
+  html += `<div style="font-size:9px;color:var(--text3);margin-top:12px;">Les paiements American Express et Capital One du compte bancaire ne sont pas comptes deux fois.</div>`;
+  el.innerHTML = html;
 };
 
 // ─── AMAZON TRACKER ────────────────────────────────────
