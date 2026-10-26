@@ -188,6 +188,50 @@ html[data-theme="light"] .ico-moon{display:flex;}
 .fixed-add-row{display:flex;gap:6px;margin-top:8px;}
 .fixed-add-raison{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:6px 8px;outline:none;}
 .fixed-add-amt{width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:#F06060;font-family:'DM Mono',monospace;font-size:11px;padding:6px 8px;text-align:right;outline:none;}
+.da-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.annual-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:6px;}
+
+/* MOBILE */
+@media (max-width:700px){
+  .login-card{padding:40px 24px;min-width:0;max-width:92vw;}
+  .wn{font-size:40px;}
+  .vs{margin:0 10px;}
+  .sub{letter-spacing:.3em;}
+  .login-tagline{letter-spacing:.2em;text-align:center;}
+  .topnav{padding:0 12px;}
+  .topnav-logo{margin-right:10px;}
+  #user-name{display:none;}
+  .tab-btn{padding:12px 8px;letter-spacing:.06em;font-size:9px;}
+  .tabs-bar{padding:0 8px;}
+  .main-content{padding:14px 12px;}
+  .section-card{padding:14px;}
+  .section-top{flex-wrap:wrap;gap:8px;}
+  .section-top > div{flex-wrap:wrap;}
+  .btn-ghost,.btn-primary{padding:6px 10px;}
+  .stats-row{grid-template-columns:1fr 1fr;gap:8px;}
+  .stat-card{padding:12px 8px;min-width:0;}
+  .stat-value{font-size:22px;}
+  .budget-salary-input{width:100%;text-align:center;}
+  .da-grid{grid-template-columns:1fr;}
+  .annual-stats{grid-template-columns:1fr 1fr;gap:8px;}
+  .annual-stats .stat-card:nth-child(3){grid-column:1/-1;}
+  .budget-cal-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;}
+  .budget-cal-day{padding:3px;min-height:56px;min-width:0;overflow:hidden;}
+  .budget-cal-empty{min-height:0;}
+  .budget-dep-tag{font-size:7px;padding:1px 2px;}
+  .budget-day-total{font-size:8px;}
+  .cartes-grid{grid-template-columns:1fr !important;}
+  .carte-sub-header,.carte-row,.carte-total-row{grid-template-columns:46px 60px 60px minmax(0,1fr) 18px;padding-left:8px;padding-right:8px;}
+  .carte-row.amazon-row{grid-template-columns:46px 60px minmax(0,1fr) 18px;}
+  .carte-input{min-width:0;}
+  .carte-del-btn{opacity:1;}
+  .amazon-col-heads,.amazon-tracker-row{grid-template-columns:minmax(0,1fr) 86px 64px 20px;gap:4px;}
+  .amazon-tracker-row select{min-width:0;width:100%;}
+  .amazon-tracker-row input{min-width:0;}
+  .amazon-del-btn{opacity:1;}
+  .budget-modal-box,.cat-modal-box{width:92vw !important;max-width:92vw;padding:16px;}
+  #fix-autre-list > div{grid-template-columns:minmax(0,1fr) 96px 62px !important;}
+}
 </style>
 </head>
 <body>
@@ -229,21 +273,16 @@ html[data-theme="light"] .ico-moon{display:flex;}
     <button class="tab-btn active" data-tab="budget">Budget</button>
     <button class="tab-btn" data-tab="cartes">Cartes</button>
     <button class="tab-btn" data-tab="amazon">Amazon</button>
+    <button class="tab-btn" data-tab="dettes">Dettes/Actifs</button>
     <button class="tab-btn" data-tab="accueil">My Year</button>
   </div>
 
   <div class="main-content">
 
-    <!-- ONGLET ACCUEIL : MY YEAR -->
-    <div class="tab-panel" id="tab-accueil">
-      <p class="page-title">My Year</p>
-      <div class="section-card">
-        <div class="section-top">
-          <h2 class="section-title">Resume annuel</h2>
-        </div>
-        <div id="annual-summary-content"><p style="font-size:11px;color:var(--text3);">Chargement...</p></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+    <!-- ONGLET DETTES / ACTIFS -->
+    <div class="tab-panel" id="tab-dettes">
+      <p class="page-title">Dettes/Actifs</p>
+      <div class="da-grid">
         <div class="section-card">
           <h2 class="section-title" style="margin-bottom:12px;">Dettes</h2>
           <div id="budget-dettes"></div>
@@ -260,6 +299,17 @@ html[data-theme="light"] .ico-moon{display:flex;}
             <span style="color:var(--text2)">Valeur nette</span><span id="b-valeur-nette" style="color:var(--teal)">0$</span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ONGLET ACCUEIL : MY YEAR -->
+    <div class="tab-panel" id="tab-accueil">
+      <p class="page-title">My Year</p>
+      <div class="section-card">
+        <div class="section-top">
+          <h2 class="section-title">Resume annuel</h2>
+        </div>
+        <div id="annual-summary-content"><p style="font-size:11px;color:var(--text3);">Chargement...</p></div>
       </div>
     </div>
 
@@ -1109,7 +1159,7 @@ window.loadAnnualSummary = async function() {
   const list = obj => Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v])=>rowHtml(k,v)).join('');
   const stat = (v,label,color,key) => `<div class="stat-card"${key ? ` id="annual-card-${key}" onclick="showAnnualDetail('${key}')" style="cursor:pointer;"` : ''}><span class="stat-value" style="color:${color};">${money(v)}</span><span class="stat-label">${label}</span></div>`;
 
-  let html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:6px;">${stat(bankTotal,'Compte bancaire','var(--c2)','bank')}${stat(cardsTotal,'Cartes de credit','var(--c2)','cards')}${stat(total,'Total general','#F06060')}</div><div id="annual-detail"></div>`;
+  let html = `<div class="annual-stats">${stat(bankTotal,'Compte bancaire','var(--c2)','bank')}${stat(cardsTotal,'Cartes de credit','var(--c2)','cards')}${stat(total,'Total general','#F06060')}</div><div id="annual-detail"></div>`;
   annualDetail.bank = headHtml('Compte bancaire (par categorie)') + list(bank);
   annualDetail.cards = headHtml('Cartes de credit (par raison)') + list(cards);
   html += headHtml('Par mois') + Object.keys(byMonth).map(Number).sort((a,b)=>a-b).map(m=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${MONTHS_FR[m]}</span><span style="color:#F06060;font-family:DM Mono,monospace;">${money(byMonth[m])}</span></div>`).join('');
