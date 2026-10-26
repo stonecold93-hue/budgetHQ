@@ -189,6 +189,7 @@ html[data-theme="light"] .ico-moon{display:flex;}
 .fixed-add-raison{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:6px 8px;outline:none;}
 .fixed-add-amt{width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:#F06060;font-family:'DM Mono',monospace;font-size:11px;padding:6px 8px;text-align:right;outline:none;}
 .da-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.da-status{width:100%;}
 .annual-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:6px;}
 
 /* MOBILE */
@@ -300,6 +301,7 @@ html[data-theme="light"] .ico-moon{display:flex;}
           </div>
         </div>
       </div>
+      <div class="stat-card da-status" id="b-statut" style="border-color:var(--c2);"><span class="stat-value" id="b-statut-val" style="color:var(--c2);">0.00$</span><span class="stat-label" id="b-statut-txt">Egal : dettes et actifs equilibres</span></div>
     </div>
 
     <!-- ONGLET ACCUEIL : MY YEAR -->
@@ -1423,6 +1425,14 @@ function calcBudgetBilan() {
   set('b-total-dettes',dettes);
   const vn=document.getElementById('b-valeur-nette');
   if (vn){ vn.textContent=fmtB(actifs-dettes); vn.style.color=(actifs-dettes)>=0?'var(--teal)':'#F06060'; }
+  const diff=Math.round((actifs-dettes)*100)/100;
+  const st=document.getElementById('b-statut'), sv=document.getElementById('b-statut-val'), sx=document.getElementById('b-statut-txt');
+  if (st && sv && sx) {
+    const col = diff<0 ? '#F06060' : diff>0 ? '#34C472' : 'var(--c2)';
+    st.style.borderColor=col; sv.style.color=col;
+    sv.textContent=(diff>0?'+':'')+fmtB(diff);
+    sx.textContent = diff<0 ? 'Dans le rouge : dettes plus elevees que les actifs' : diff>0 ? 'Dans le vert : actifs plus eleves que les dettes' : 'Egal : dettes et actifs equilibres';
+  }
 }
 
 // ─── NAV ───────────────────────────────────────────────
