@@ -1040,6 +1040,17 @@ function renderCartesCatSummary() {
 }
 
 // ─── MY YEAR ───────────────────────────────────────────
+let annualDetail = {bank:'', cards:''}, annualOpen = null;
+function applyAnnualOpen() {
+  const panel = document.getElementById('annual-detail');
+  if (panel) panel.innerHTML = annualOpen ? annualDetail[annualOpen] : '';
+  ['bank','cards'].forEach(k => { const c = document.getElementById('annual-card-'+k); if (c) c.style.background = annualOpen===k ? 'rgba(35,137,212,.15)' : ''; });
+}
+window.showAnnualDetail = function(which) {
+  annualOpen = (annualOpen===which) ? null : which;
+  applyAnnualOpen();
+};
+
 window.loadAnnualSummary = async function() {
   const el = document.getElementById('annual-summary-content');
   if (!el) return;
@@ -1096,14 +1107,15 @@ window.loadAnnualSummary = async function() {
   };
   const headHtml = t => `<div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 6px;">${t}</div>`;
   const list = obj => Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v])=>rowHtml(k,v)).join('');
-  const stat = (v,label,color) => `<div class="stat-card"><span class="stat-value" style="color:${color};">${money(v)}</span><span class="stat-label">${label}</span></div>`;
+  const stat = (v,label,color,key) => `<div class="stat-card"${key ? ` id="annual-card-${key}" onclick="showAnnualDetail('${key}')" style="cursor:pointer;"` : ''}><span class="stat-value" style="color:${color};">${money(v)}</span><span class="stat-label">${label}</span></div>`;
 
-  let html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:6px;">${stat(bankTotal,'Compte bancaire','var(--c2)')}${stat(cardsTotal,'Cartes de credit','var(--c2)')}${stat(total,'Total general','#F06060')}</div>`;
-  html += headHtml('Compte bancaire (par categorie)') + list(bank);
-  html += headHtml('Cartes de credit (par raison)') + list(cards);
+  let html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:6px;">${stat(bankTotal,'Compte bancaire','var(--c2)','bank')}${stat(cardsTotal,'Cartes de credit','var(--c2)','cards')}${stat(total,'Total general','#F06060')}</div><div id="annual-detail"></div>`;
+  annualDetail.bank = headHtml('Compte bancaire (par categorie)') + list(bank);
+  annualDetail.cards = headHtml('Cartes de credit (par raison)') + list(cards);
   html += headHtml('Par mois') + Object.keys(byMonth).map(Number).sort((a,b)=>a-b).map(m=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${MONTHS_FR[m]}</span><span style="color:#F06060;font-family:DM Mono,monospace;">${money(byMonth[m])}</span></div>`).join('');
   html += `<div style="font-size:9px;color:var(--text3);margin-top:12px;">Les paiements American Express et Capital One du compte bancaire ne sont pas comptes deux fois.</div>`;
   el.innerHTML = html;
+  applyAnnualOpen();
 };
 
 // ─── AMAZON TRACKER ────────────────────────────────────
