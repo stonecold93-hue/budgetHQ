@@ -190,7 +190,7 @@ html[data-theme="light"] .ico-moon{display:flex;}
 .fixed-add-amt{width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:#F06060;font-family:'DM Mono',monospace;font-size:11px;padding:6px 8px;text-align:right;outline:none;}
 .da-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
 .da-status{width:100%;}
-.annual-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:6px;}
+.annual-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:6px;}
 
 /* MOBILE */
 @media (max-width:700px){
@@ -215,6 +215,7 @@ html[data-theme="light"] .ico-moon{display:flex;}
   .budget-salary-input{width:100%;text-align:center;}
   .da-grid{grid-template-columns:1fr;}
   .annual-stats{grid-template-columns:1fr 1fr;gap:8px;}
+  .annual-stats .stat-card:nth-child(3){grid-column:1/-1;}
   .budget-cal-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;}
   .budget-cal-day{padding:3px;min-height:56px;min-width:0;overflow:hidden;}
   .budget-cal-empty{min-height:0;}
@@ -620,7 +621,6 @@ async function loadAll() {
   await loadCategories();
   await loadFixedPaymentsFromDB();
   await loadBudget();
-  await loadBilan();
   renderBudget();
   renderCartes();
   calcAmazonTotal();
@@ -1109,7 +1109,7 @@ window.loadAnnualSummary = async function() {
   const year = new Date().getFullYear();
   const CARD_PAY_CATS = ['American Express','Capital One'];
   const bank = {}, cards = {}, byMonth = {};
-  let bankTotal = 0, cardsTotal = 0, cardPayTotal = 0;
+  let bankTotal = 0, cardsTotal = 0;
   const addMonth = (m, v) => { byMonth[m] = (byMonth[m]||0) + v; };
 
   // Compte bancaire : calendrier Budget (sans les paiements de cartes, deja comptes dans les cartes)
@@ -1118,11 +1118,9 @@ window.loadAnnualSummary = async function() {
     const m = parseInt(k.slice(5,7),10) - 1;
     entries.forEach(e => {
       const amt = parseFloat(e.amt)||0;
-      if (amt<=0) return;
+      if (amt<=0 || CARD_PAY_CATS.includes(e.cat)) return;
       const c = e.cat||'Autre';
-      bank[c] = (bank[c]||0) + amt; bankTotal += amt;
-      if (CARD_PAY_CATS.includes(e.cat)) { cardPayTotal += amt; return; } // compte dans le compte bancaire, pas dans le total general (deja dans les cartes)
-      addMonth(m, amt);
+      bank[c] = (bank[c]||0) + amt; bankTotal += amt; addMonth(m, amt);
     });
   });
 
@@ -1152,22 +1150,22 @@ window.loadAnnualSummary = async function() {
     if (amzTotal>0) { cards['Amazon'] = (cards['Amazon']||0) + amzTotal; cardsTotal += amzTotal; addMonth(m, amzTotal); }
   });
 
-  const total = bankTotal - cardPayTotal + cardsTotal;
-  if (bankTotal + cardsTotal <= 0) { el.innerHTML='<p style="font-size:11px;color:var(--text3);">Aucune donnee.</p>'; return; }
+  const total = bankTotal + cardsTotal;
+  if (total<=0) { el.innerHTML='<p style="font-size:11px;color:var(--text3);">Aucune donnee.</p>'; return; }
   const money = v => v.toFixed(2)+'$';
-  const creditBal = Math.round((cardPayTotal - cardsTotal)*100)/100; // paye sur les cartes moins depense sur les cartes
-  const rowHtml = (label, amt, base) => {
-    const pct = base>0 ? Math.round(amt/base*100) : 0;
+  const rowHtml = (label, amt) => {
+    const pct = total>0 ? Math.round(amt/total*100) : 0;
     return `<div style="display:grid;grid-template-columns:1fr 100px 60px;gap:4px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${label}</span><span style="text-align:right;color:#F06060;font-family:DM Mono,monospace;">${money(amt)}</span><span style="text-align:right;color:var(--text3);font-family:DM Mono,monospace;">${pct}%</span></div>`;
   };
   const headHtml = t => `<div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 6px;">${t}</div>`;
-  const list = (obj, base) => Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v])=>rowHtml(k,v,base)).join('');
-  const stat = (v,label,color,key,signed) => `<div class="stat-card"${key ? ` id="annual-card-${key}" onclick="showAnnualDetail('${key}')" style="cursor:pointer;"` : ''}><span class="stat-value" style="color:${color};">${signed&&v>0?'+':''}${money(v)}</span><span class="stat-label">${label}</span></div>`;
+  const list = obj => Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v])=>rowHtml(k,v)).join('');
+  const stat = (v,label,color,key) => `<div class="stat-card"${key ? ` id="annual-card-${key}" onclick="showAnnualDetail('${key}')" style="cursor:pointer;"` : ''}><span class="stat-value" style="color:${color};">${money(v)}</span><span class="stat-label">${label}</span></div>`;
 
-  let html = `<div class="annual-stats">${stat(bankTotal,'Compte bancaire','var(--c2)','bank')}${stat(cardsTotal,'Cartes de credit','var(--c2)','cards')}${stat(cardPayTotal,'Total paiement credit','var(--c2)')}${stat(creditBal,'Total credit',creditBal>=0?'#34C472':'#F06060',null,true)}</div><div id="annual-detail"></div>`;
-  annualDetail.bank = headHtml('Compte bancaire (par categorie)') + list(bank, bankTotal);
-  annualDetail.cards = headHtml('Cartes de credit (par raison)') + list(cards, cardsTotal);
+  let html = `<div class="annual-stats">${stat(bankTotal,'Compte bancaire','var(--c2)','bank')}${stat(cardsTotal,'Cartes de credit','var(--c2)','cards')}${stat(total,'Total general','#F06060')}</div><div id="annual-detail"></div>`;
+  annualDetail.bank = headHtml('Compte bancaire (par categorie)') + list(bank);
+  annualDetail.cards = headHtml('Cartes de credit (par raison)') + list(cards);
   html += headHtml('Par mois') + Object.keys(byMonth).map(Number).sort((a,b)=>a-b).map(m=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${MONTHS_FR[m]}</span><span style="color:#F06060;font-family:DM Mono,monospace;">${money(byMonth[m])}</span></div>`).join('');
+  html += `<div style="font-size:9px;color:var(--text3);margin-top:12px;">Les paiements American Express et Capital One du compte bancaire ne sont pas comptes deux fois.</div>`;
   el.innerHTML = html;
   applyAnnualOpen();
 };
@@ -1408,56 +1406,17 @@ window.saveFixAutre = async function() {
 };
 
 // ─── BILAN ─────────────────────────────────────────────
-window.addBudgetRow = function(containerId, isPos, preLabel, preAmt) {
+window.addBudgetRow = function(containerId, isPos) {
   const cont = document.getElementById(containerId);
   if (!cont) return;
   const row = document.createElement('div'); row.className='budget-edit-row';
   row.innerHTML=`<input class="budget-label-input" type="text" placeholder="Description"><input class="budget-amt-input" type="number" placeholder="0.00"><button class="carte-del-btn" style="opacity:1;">x</button>`;
   const [labelIn,amtIn,delBtn]=row.querySelectorAll('input,button');
-  if (preLabel) labelIn.value = preLabel;
-  if (preAmt !== undefined && preAmt !== null && preAmt !== '') amtIn.value = preAmt;
-  labelIn.oninput=()=>{ calcBudgetBilan(); saveBilan(); };
-  amtIn.oninput=()=>{ calcBudgetBilan(); saveBilan(); };
-  delBtn.onclick=()=>{ row.remove(); calcBudgetBilan(); saveBilan(); };
+  labelIn.oninput=()=>calcBudgetBilan();
+  amtIn.oninput=()=>calcBudgetBilan();
+  delBtn.onclick=()=>{ row.remove(); calcBudgetBilan(); };
   cont.appendChild(row);
 };
-
-// Sauvegarde Dettes / Actifs : settings/bilan (nouveau document)
-let bilanLoaded = false, bilanTimer = null;
-function readBilanRows(id) {
-  const out = [];
-  document.getElementById(id)?.querySelectorAll('.budget-edit-row').forEach(r => {
-    const l = r.querySelector('.budget-label-input')?.value || '';
-    const a = r.querySelector('.budget-amt-input')?.value || '';
-    if (l.trim() !== '' || a !== '') out.push({l, a});
-  });
-  return out;
-}
-function saveBilan() {
-  if (!bilanLoaded) return;
-  clearTimeout(bilanTimer);
-  bilanTimer = setTimeout(async () => {
-    try {
-      await setDoc(doc(db,'users',uid(),'settings','bilan'), {
-        dettes: JSON.stringify(readBilanRows('budget-dettes')),
-        actifs: JSON.stringify(readBilanRows('budget-actifs'))
-      });
-    } catch(e) { console.error('saveBilan:', e); }
-  }, 600);
-}
-async function loadBilan() {
-  try {
-    const snap = await getDoc(doc(db,'users',uid(),'settings','bilan'));
-    if (snap.exists()) {
-      const d = snap.data();
-      ['budget-dettes','budget-actifs'].forEach(id => { const c = document.getElementById(id); if (c) c.innerHTML = ''; });
-      JSON.parse(d.dettes || '[]').forEach(r => window.addBudgetRow('budget-dettes', false, r.l, r.a));
-      JSON.parse(d.actifs || '[]').forEach(r => window.addBudgetRow('budget-actifs', true, r.l, r.a));
-      calcBudgetBilan();
-    }
-    bilanLoaded = true;
-  } catch(e) { console.error('loadBilan:', e); }
-}
 
 function calcBudgetBilan() {
   const getTotal = id => { let t=0; document.getElementById(id)?.querySelectorAll('.budget-amt-input').forEach(i=>t+=parseFloat(i.value)||0); return t; };
