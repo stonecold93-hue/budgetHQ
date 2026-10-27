@@ -1109,7 +1109,7 @@ window.loadAnnualSummary = async function() {
   const year = new Date().getFullYear();
   const CARD_PAY_CATS = ['American Express','Capital One'];
   const bank = {}, cards = {}, byMonth = {};
-  let bankTotal = 0, cardsTotal = 0;
+  let bankTotal = 0, cardsTotal = 0, cardPayTotal = 0;
   const addMonth = (m, v) => { byMonth[m] = (byMonth[m]||0) + v; };
 
   // Compte bancaire : calendrier Budget (sans les paiements de cartes, deja comptes dans les cartes)
@@ -1118,9 +1118,11 @@ window.loadAnnualSummary = async function() {
     const m = parseInt(k.slice(5,7),10) - 1;
     entries.forEach(e => {
       const amt = parseFloat(e.amt)||0;
-      if (amt<=0 || CARD_PAY_CATS.includes(e.cat)) return;
+      if (amt<=0) return;
       const c = e.cat||'Autre';
-      bank[c] = (bank[c]||0) + amt; bankTotal += amt; addMonth(m, amt);
+      bank[c] = (bank[c]||0) + amt; bankTotal += amt;
+      if (CARD_PAY_CATS.includes(e.cat)) { cardPayTotal += amt; return; } // compte dans le compte bancaire, pas dans le total general (deja dans les cartes)
+      addMonth(m, amt);
     });
   });
 
@@ -1150,22 +1152,21 @@ window.loadAnnualSummary = async function() {
     if (amzTotal>0) { cards['Amazon'] = (cards['Amazon']||0) + amzTotal; cardsTotal += amzTotal; addMonth(m, amzTotal); }
   });
 
-  const total = bankTotal + cardsTotal;
-  if (total<=0) { el.innerHTML='<p style="font-size:11px;color:var(--text3);">Aucune donnee.</p>'; return; }
+  const total = bankTotal - cardPayTotal + cardsTotal;
+  if (bankTotal + cardsTotal <= 0) { el.innerHTML='<p style="font-size:11px;color:var(--text3);">Aucune donnee.</p>'; return; }
   const money = v => v.toFixed(2)+'$';
-  const rowHtml = (label, amt) => {
-    const pct = total>0 ? Math.round(amt/total*100) : 0;
+  const rowHtml = (label, amt, base) => {
+    const pct = base>0 ? Math.round(amt/base*100) : 0;
     return `<div style="display:grid;grid-template-columns:1fr 100px 60px;gap:4px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${label}</span><span style="text-align:right;color:#F06060;font-family:DM Mono,monospace;">${money(amt)}</span><span style="text-align:right;color:var(--text3);font-family:DM Mono,monospace;">${pct}%</span></div>`;
   };
   const headHtml = t => `<div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 6px;">${t}</div>`;
-  const list = obj => Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v])=>rowHtml(k,v)).join('');
+  const list = (obj, base) => Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v])=>rowHtml(k,v,base)).join('');
   const stat = (v,label,color,key) => `<div class="stat-card"${key ? ` id="annual-card-${key}" onclick="showAnnualDetail('${key}')" style="cursor:pointer;"` : ''}><span class="stat-value" style="color:${color};">${money(v)}</span><span class="stat-label">${label}</span></div>`;
 
-  let html = `<div class="annual-stats">${stat(bankTotal,'Compte bancaire','var(--c2)','bank')}${stat(cardsTotal,'Cartes de credit','var(--c2)','cards')}${stat(total,'Total general','#F06060')}</div><div id="annual-detail"></div>`;
-  annualDetail.bank = headHtml('Compte bancaire (par categorie)') + list(bank);
-  annualDetail.cards = headHtml('Cartes de credit (par raison)') + list(cards);
+  let html = `<div class="annual-stats">${stat(bankTotal,'Compte bancaire','var(--c2)','bank')}${stat(cardsTotal,'Cartes de credit','var(--c2)','cards')}${stat(total,'Total general (paiements de cartes retires)','#F06060')}</div><div id="annual-detail"></div>`;
+  annualDetail.bank = headHtml('Compte bancaire (par categorie)') + list(bank, bankTotal);
+  annualDetail.cards = headHtml('Cartes de credit (par raison)') + list(cards, cardsTotal);
   html += headHtml('Par mois') + Object.keys(byMonth).map(Number).sort((a,b)=>a-b).map(m=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${MONTHS_FR[m]}</span><span style="color:#F06060;font-family:DM Mono,monospace;">${money(byMonth[m])}</span></div>`).join('');
-  html += `<div style="font-size:9px;color:var(--text3);margin-top:12px;">Les paiements American Express et Capital One du compte bancaire ne sont pas comptes deux fois.</div>`;
   el.innerHTML = html;
   applyAnnualOpen();
 };
