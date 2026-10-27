@@ -190,7 +190,7 @@ html[data-theme="light"] .ico-moon{display:flex;}
 .fixed-add-amt{width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:#F06060;font-family:'DM Mono',monospace;font-size:11px;padding:6px 8px;text-align:right;outline:none;}
 .da-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
 .da-status{width:100%;}
-.annual-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:6px;}
+.annual-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:6px;}
 
 /* MOBILE */
 @media (max-width:700px){
@@ -215,7 +215,6 @@ html[data-theme="light"] .ico-moon{display:flex;}
   .budget-salary-input{width:100%;text-align:center;}
   .da-grid{grid-template-columns:1fr;}
   .annual-stats{grid-template-columns:1fr 1fr;gap:8px;}
-  .annual-stats .stat-card:nth-child(3){grid-column:1/-1;}
   .budget-cal-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;}
   .budget-cal-day{padding:3px;min-height:56px;min-width:0;overflow:hidden;}
   .budget-cal-empty{min-height:0;}
@@ -1155,15 +1154,16 @@ window.loadAnnualSummary = async function() {
   const total = bankTotal - cardPayTotal + cardsTotal;
   if (bankTotal + cardsTotal <= 0) { el.innerHTML='<p style="font-size:11px;color:var(--text3);">Aucune donnee.</p>'; return; }
   const money = v => v.toFixed(2)+'$';
+  const creditBal = Math.round((cardPayTotal - cardsTotal)*100)/100; // paye sur les cartes moins depense sur les cartes
   const rowHtml = (label, amt, base) => {
     const pct = base>0 ? Math.round(amt/base*100) : 0;
     return `<div style="display:grid;grid-template-columns:1fr 100px 60px;gap:4px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${label}</span><span style="text-align:right;color:#F06060;font-family:DM Mono,monospace;">${money(amt)}</span><span style="text-align:right;color:var(--text3);font-family:DM Mono,monospace;">${pct}%</span></div>`;
   };
   const headHtml = t => `<div style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 6px;">${t}</div>`;
   const list = (obj, base) => Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v])=>rowHtml(k,v,base)).join('');
-  const stat = (v,label,color,key) => `<div class="stat-card"${key ? ` id="annual-card-${key}" onclick="showAnnualDetail('${key}')" style="cursor:pointer;"` : ''}><span class="stat-value" style="color:${color};">${money(v)}</span><span class="stat-label">${label}</span></div>`;
+  const stat = (v,label,color,key,signed) => `<div class="stat-card"${key ? ` id="annual-card-${key}" onclick="showAnnualDetail('${key}')" style="cursor:pointer;"` : ''}><span class="stat-value" style="color:${color};">${signed&&v>0?'+':''}${money(v)}</span><span class="stat-label">${label}</span></div>`;
 
-  let html = `<div class="annual-stats">${stat(bankTotal,'Compte bancaire','var(--c2)','bank')}${stat(cardsTotal,'Cartes de credit','var(--c2)','cards')}${stat(total,'Total general (paiements de cartes retires)','#F06060')}</div><div id="annual-detail"></div>`;
+  let html = `<div class="annual-stats">${stat(bankTotal,'Compte bancaire','var(--c2)','bank')}${stat(cardsTotal,'Cartes de credit','var(--c2)','cards')}${stat(cardPayTotal,'Total paiement credit','var(--c2)')}${stat(creditBal,'Total credit',creditBal>=0?'#34C472':'#F06060',null,true)}</div><div id="annual-detail"></div>`;
   annualDetail.bank = headHtml('Compte bancaire (par categorie)') + list(bank, bankTotal);
   annualDetail.cards = headHtml('Cartes de credit (par raison)') + list(cards, cardsTotal);
   html += headHtml('Par mois') + Object.keys(byMonth).map(Number).sort((a,b)=>a-b).map(m=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text2);">${MONTHS_FR[m]}</span><span style="color:#F06060;font-family:DM Mono,monospace;">${money(byMonth[m])}</span></div>`).join('');
