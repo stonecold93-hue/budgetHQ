@@ -620,6 +620,7 @@ async function loadAll() {
   await loadCategories();
   await loadFixedPaymentsFromDB();
   await loadBudget();
+  await loadBilan();
   renderBudget();
   renderCartes();
   calcAmazonTotal();
@@ -1407,17 +1408,56 @@ window.saveFixAutre = async function() {
 };
 
 // ─── BILAN ─────────────────────────────────────────────
-window.addBudgetRow = function(containerId, isPos) {
+window.addBudgetRow = function(containerId, isPos, preLabel, preAmt) {
   const cont = document.getElementById(containerId);
   if (!cont) return;
   const row = document.createElement('div'); row.className='budget-edit-row';
   row.innerHTML=`<input class="budget-label-input" type="text" placeholder="Description"><input class="budget-amt-input" type="number" placeholder="0.00"><button class="carte-del-btn" style="opacity:1;">x</button>`;
   const [labelIn,amtIn,delBtn]=row.querySelectorAll('input,button');
-  labelIn.oninput=()=>calcBudgetBilan();
-  amtIn.oninput=()=>calcBudgetBilan();
-  delBtn.onclick=()=>{ row.remove(); calcBudgetBilan(); };
+  if (preLabel) labelIn.value = preLabel;
+  if (preAmt !== undefined && preAmt !== null && preAmt !== '') amtIn.value = preAmt;
+  labelIn.oninput=()=>{ calcBudgetBilan(); saveBilan(); };
+  amtIn.oninput=()=>{ calcBudgetBilan(); saveBilan(); };
+  delBtn.onclick=()=>{ row.remove(); calcBudgetBilan(); saveBilan(); };
   cont.appendChild(row);
 };
+
+// Sauvegarde Dettes / Actifs : settings/bilan (nouveau document)
+let bilanLoaded = false, bilanTimer = null;
+function readBilanRows(id) {
+  const out = [];
+  document.getElementById(id)?.querySelectorAll('.budget-edit-row').forEach(r => {
+    const l = r.querySelector('.budget-label-input')?.value || '';
+    const a = r.querySelector('.budget-amt-input')?.value || '';
+    if (l.trim() !== '' || a !== '') out.push({l, a});
+  });
+  return out;
+}
+function saveBilan() {
+  if (!bilanLoaded) return;
+  clearTimeout(bilanTimer);
+  bilanTimer = setTimeout(async () => {
+    try {
+      await setDoc(doc(db,'users',uid(),'settings','bilan'), {
+        dettes: JSON.stringify(readBilanRows('budget-dettes')),
+        actifs: JSON.stringify(readBilanRows('budget-actifs'))
+      });
+    } catch(e) { console.error('saveBilan:', e); }
+  }, 600);
+}
+async function loadBilan() {
+  try {
+    const snap = await getDoc(doc(db,'users',uid(),'settings','bilan'));
+    if (snap.exists()) {
+      const d = snap.data();
+      ['budget-dettes','budget-actifs'].forEach(id => { const c = document.getElementById(id); if (c) c.innerHTML = ''; });
+      JSON.parse(d.dettes || '[]').forEach(r => window.addBudgetRow('budget-dettes', false, r.l, r.a));
+      JSON.parse(d.actifs || '[]').forEach(r => window.addBudgetRow('budget-actifs', true, r.l, r.a));
+      calcBudgetBilan();
+    }
+    bilanLoaded = true;
+  } catch(e) { console.error('loadBilan:', e); }
+}
 
 function calcBudgetBilan() {
   const getTotal = id => { let t=0; document.getElementById(id)?.querySelectorAll('.budget-amt-input').forEach(i=>t+=parseFloat(i.value)||0); return t; };
