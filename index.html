@@ -578,6 +578,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'accueil') window.loadAnnualSummary();
+    if (btn.dataset.tab === 'dettes') autoBilanMois();
   });
 });
 
@@ -1454,6 +1455,7 @@ function saveBilan() {
         actifs: JSON.stringify(readBilanRows('budget-actifs'))
       });
     } catch(e) { console.error('saveBilan:', e); }
+    autoBilanMois();
   }, 600);
 }
 async function loadBilan() {
@@ -1500,16 +1502,20 @@ async function loadBilanMois() {
   } catch(e) { console.error('loadBilanMois:', e); }
   renderBilanMois();
 }
-window.saveBilanMois = async function() {
+async function recordBilanMois(force) {
   if (!bilanMoisLoaded || !bilanLoaded) return;
+  if (!readBilanRows('budget-dettes').length && !readBilanRows('budget-actifs').length) return;
   const now = new Date();
   const k = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
   const v = bilanNet();
   const ex = bilanMois.find(r => r.k === k);
+  if (ex && ex.v === v && !force) return;
   if (ex) ex.v = v; else bilanMois.push({k, v});
   renderBilanMois();
   await persistBilanMois();
-};
+}
+function autoBilanMois() { recordBilanMois(false); }
+window.saveBilanMois = function() { return recordBilanMois(true); };
 window.delBilanMois = async function(k) {
   if (!bilanMoisLoaded) return;
   if (!confirm('Supprimer ce mois?')) return;
