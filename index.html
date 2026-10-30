@@ -6,7 +6,7 @@
 <title>BudgetHQ</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300;1,600&family=DM+Mono:wght@300;400&family=Just+Another+Hand&display=swap" rel="stylesheet">
-<script type='text/javascript' src='https://api.netlify.com/oFQRZis322mr2WwMIamPNpv-2ipv0A9hZwyNjx9vN9ts459Th-KKgn7UUds4ih1fz7hNceiHWrAX06gQG0tkn6Lj3KwEBCeORFmO5LlCXzi0Q7_bJjUgIv_GGp2sNz824GUeQukun0q07a9MNb2V0g253ILDeJvVlDHLBbz7zJMp25meNwiczeXAtz-OUgbi9oi8dT9csfO5-WrErKpsXIRHh5YiBdSE2QVGkVQ3vmr2nNsnp5Dz2uwmp1GL8n-izKXxu7vv3Xs8QPDUTmWMKZD5ZBOPSzKCKWAIVkfU-2tA6s49BAx64ByT28tp9Q_NjFqAwp-awlA-EIJRrvE_JNmuZ8-FBhzDTu1jg5HvOGa3hfz-YL3Vlb77SB5zJcyEMn0hAxhbT-vfD1xGyzwY3NW3g38LojKttGQv9awm0ncL6KsusUt9QKNQuv0vWQGv1rGY1bond1VhlZcrwdCa2bBuvgjC8xqo9SynAAis_iwA8I71op026IxYyqMFjqldUZyg0GNKmCYSV-jvNN-1'></script><script>
+<script>
 try{var t=localStorage.getItem("khq_theme");document.documentElement.setAttribute("data-theme",t==="light"?"light":"dark");}catch(e){document.documentElement.setAttribute("data-theme","dark");}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -190,6 +190,10 @@ html[data-theme="light"] .ico-moon{display:flex;}
 .fixed-add-amt{width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:#F06060;font-family:'DM Mono',monospace;font-size:11px;padding:6px 8px;text-align:right;outline:none;}
 .da-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
 .da-status{width:100%;}
+.evo-head,.evo-row{display:grid;grid-template-columns:1.2fr 1.3fr 1.3fr 22px;gap:8px;align-items:center;padding:6px 0;font-family:'DM Mono',monospace;font-size:11px;}
+.evo-head{color:var(--text3);font-size:9px;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.evo-row{border-bottom:1px solid var(--border);}
+.evo-row span:nth-child(2),.evo-row span:nth-child(3),.evo-head span:nth-child(2),.evo-head span:nth-child(3){text-align:right;}
 .annual-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:6px;}
 
 /* MOBILE */
@@ -301,6 +305,12 @@ html[data-theme="light"] .ico-moon{display:flex;}
         </div>
       </div>
       <div class="stat-card da-status" id="b-statut" style="border-color:var(--c2);"><span class="stat-value" id="b-statut-val" style="color:var(--c2);">0.00$</span><span class="stat-label" id="b-statut-txt">Egal : dettes et actifs equilibres</span></div>
+      <div class="section-card" style="margin-top:16px;">
+        <h2 class="section-title" style="margin-bottom:12px;">Evolution par mois</h2>
+        <div class="evo-head"><span>Mois</span><span>Actif</span><span>Evolution</span><span></span></div>
+        <div id="bilan-mois"></div>
+        <button class="btn-ghost" style="width:100%;margin-top:10px;" onclick="saveBilanMois()">+ Enregistrer ce mois</button>
+      </div>
     </div>
 
     <!-- ONGLET ACCUEIL : MY YEAR -->
@@ -621,6 +631,7 @@ async function loadAll() {
   await loadFixedPaymentsFromDB();
   await loadBudget();
   await loadBilan();
+  await loadBilanMois();
   renderBudget();
   renderCartes();
   calcAmazonTotal();
@@ -1458,6 +1469,54 @@ async function loadBilan() {
     bilanLoaded = true;
   } catch(e) { console.error('loadBilan:', e); }
 }
+
+// Evolution par mois : settings/bilan_mois (nouveau document)
+let bilanMois = [], bilanMoisLoaded = false;
+function bilanNet() {
+  const tot = id => { let t=0; document.getElementById(id)?.querySelectorAll('.budget-amt-input').forEach(i=>t+=parseFloat(i.value)||0); return t; };
+  return Math.round((tot('budget-actifs') - tot('budget-dettes'))*100)/100;
+}
+function renderBilanMois() {
+  const cont = document.getElementById('bilan-mois'); if (!cont) return;
+  const rows = [...bilanMois].sort((a,b)=>a.k<b.k?-1:1);
+  const out = rows.map((r,i) => {
+    const prev = i>0 ? rows[i-1].v : null;
+    let evo = '-', col = 'var(--text3)';
+    if (prev !== null) { const d = Math.round((r.v-prev)*100)/100; evo = (d>0?'+':'') + fmtB(d); col = d>0 ? '#34C472' : d<0 ? '#F06060' : 'var(--text3)'; }
+    const m = parseInt(r.k.slice(5,7),10)-1;
+    return `<div class="evo-row"><span style="color:var(--text2);">${MONTHS_FR[m]} ${r.k.slice(0,4)}</span><span style="color:var(--c2);">${fmtB(r.v)}</span><span style="color:${col};">${evo}</span><button class="carte-del-btn" style="opacity:1;" onclick="delBilanMois('${r.k}')">x</button></div>`;
+  }).reverse();
+  cont.innerHTML = out.join('');
+}
+async function persistBilanMois() {
+  try { await setDoc(doc(db,'users',uid(),'settings','bilan_mois'), { rows: JSON.stringify(bilanMois) }); }
+  catch(e) { console.error('persistBilanMois:', e); }
+}
+async function loadBilanMois() {
+  try {
+    const snap = await getDoc(doc(db,'users',uid(),'settings','bilan_mois'));
+    bilanMois = snap.exists() ? JSON.parse(snap.data().rows || '[]') : [];
+    bilanMoisLoaded = true;
+  } catch(e) { console.error('loadBilanMois:', e); }
+  renderBilanMois();
+}
+window.saveBilanMois = async function() {
+  if (!bilanMoisLoaded || !bilanLoaded) return;
+  const now = new Date();
+  const k = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const v = bilanNet();
+  const ex = bilanMois.find(r => r.k === k);
+  if (ex) ex.v = v; else bilanMois.push({k, v});
+  renderBilanMois();
+  await persistBilanMois();
+};
+window.delBilanMois = async function(k) {
+  if (!bilanMoisLoaded) return;
+  if (!confirm('Supprimer ce mois?')) return;
+  bilanMois = bilanMois.filter(r => r.k !== k);
+  renderBilanMois();
+  await persistBilanMois();
+};
 
 function calcBudgetBilan() {
   const getTotal = id => { let t=0; document.getElementById(id)?.querySelectorAll('.budget-amt-input').forEach(i=>t+=parseFloat(i.value)||0); return t; };
