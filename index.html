@@ -991,9 +991,26 @@ window.addBudgetEntryRow = function() {
   cont.appendChild(row);
 };
 
+// Solde actuel : une depense du jour ou avant baisse le solde (une future ne le touche pas)
+function budgetKeyIsPaid(k) {
+  const [y,m,d] = k.split('-').map(Number);
+  return new Date(y, m-1, d) <= new Date();
+}
+async function adjustSolde(delta) {
+  if (!delta) return;
+  const el = document.getElementById('b-solde-input');
+  if (!el) return;
+  const cur = parseFloat(el.value)||0;
+  el.value = Math.round((cur + delta)*100)/100;
+  _budgetSettings.solde = parseFloat(el.value)||0;
+  calcArgentRestant();
+  await saveSolde();
+}
+
 window.saveBudgetDay = async function() {
   const k = budgetSelectedDay;
   if (!k) return;
+  let soldeDelta = 0;
   const newRows = document.querySelectorAll('#budget-new-entries .budget-entry-row');
   for (const row of newRows) {
     const cat = row.querySelector('select')?.value;
@@ -1002,7 +1019,9 @@ window.saveBudgetDay = async function() {
     const ref = await addDoc(collection(db,'users',uid(),'budget_cal'), {key:k, cat, amt, type:'autre'});
     if (!budgetData[k]) budgetData[k]=[];
     budgetData[k].push({id:ref.id, key:k, cat, amt, type:'autre'});
+    if (budgetKeyIsPaid(k)) soldeDelta -= amt;
   }
+  await adjustSolde(soldeDelta);
   document.getElementById('budget-day-modal').classList.add('hidden');
   budgetSelectedDay = null;
   renderBudget();
@@ -1011,6 +1030,7 @@ window.saveBudgetDay = async function() {
 window.deleteBudgetEntry = async function(k, i) {
   const entry = budgetData[k]?.[i];
   if (entry?.id) await deleteDoc(doc(db,'users',uid(),'budget_cal',entry.id));
+  if (entry && budgetKeyIsPaid(k)) await adjustSolde(parseFloat(entry.amt)||0);
   if (budgetData[k]) { budgetData[k].splice(i,1); if (!budgetData[k].length) delete budgetData[k]; }
   renderBudget();
   openBudgetDay(parseInt(k.split('-')[2]), k);
