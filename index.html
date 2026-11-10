@@ -236,6 +236,13 @@ html[data-theme="light"] .ico-moon{display:flex;}
   .budget-modal-box,.cat-modal-box{width:92vw !important;max-width:92vw;padding:16px;}
   #fix-autre-list > div{grid-template-columns:minmax(0,1fr) 96px 62px !important;}
 }
+.rev-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+.rev-form .budget-label-input{flex:1;min-width:120px;border-bottom:1px solid var(--border);padding:6px 0;}
+.rev-form .budget-amt-input{color:#34C472;border-bottom:1px solid var(--border);padding:6px 0;}
+.rev-date{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:6px 8px;color-scheme:dark;}
+.rev-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;}
+.rev-row .rd{flex:1;color:var(--text);min-width:0;overflow-wrap:anywhere;} .rev-row .rt{color:var(--text3);} .rev-row .ra{color:#34C472;min-width:80px;text-align:right;}
+#revenus-list .rev-row:last-child{border-bottom:none;}
 </style>
 </head>
 <body>
@@ -352,6 +359,19 @@ html[data-theme="light"] .ico-moon{display:flex;}
           </div>
         </div>
         <div class="budget-cal-grid" id="budget-cal-grid"></div>
+      </div>
+      <div class="section-card">
+        <h2 class="section-title" style="margin-bottom:12px;">Revenus</h2>
+        <div class="rev-form">
+          <input class="budget-label-input" id="rev-desc" type="text" placeholder="Description">
+          <input class="budget-amt-input" id="rev-amt" type="number" placeholder="0.00" onkeydown="if(event.key==='Enter')addRevenu()">
+          <input class="rev-date" id="rev-date" type="date">
+          <button class="btn-ghost" onclick="addRevenu()">+ Ajouter</button>
+        </div>
+        <div id="revenus-list"></div>
+        <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;font-size:11px;">
+          <span style="color:var(--text2)">Total revenus du mois</span><span id="revenus-total" style="color:#34C472;font-family:'DM Mono',monospace;">0.00$</span>
+        </div>
       </div>
       <div class="section-card">
         <h2 class="section-title" style="margin-bottom:12px;">Resume par categorie</h2>
@@ -633,6 +653,7 @@ async function loadAll() {
   await loadBudget();
   await loadBilan();
   await loadBilanMois();
+  await loadRevenus();
   renderBudget();
   renderCartes();
   calcAmazonTotal();
@@ -914,6 +935,7 @@ function renderBudget() {
   }
   calcBudgetSummary();
   renderNextPayments();
+  renderRevenus();
 }
 
 function calcBudgetSummary() {
@@ -990,6 +1012,68 @@ window.addBudgetEntryRow = function() {
   row.innerHTML = `<select class="budget-entry-select">${budgetCats.map(c=>`<option>${c}</option>`).join('')}</select><input type="number" class="budget-entry-amt" placeholder="0.00">`;
   cont.appendChild(row);
 };
+
+// Revenus : collection users/{uid}/revenus. Un revenu daté aujourd hui ou avant s ajoute au Solde actuel.
+let revenusData = [], revenusLoaded = false;
+function todayKey() {
+  const n = new Date();
+  return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0");
+}
+async function loadRevenus() {
+  try {
+    const snap = await getDocs(collection(db,"users",uid(),"revenus"));
+    revenusData = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    revenusLoaded = true;
+  } catch(e) { console.error("loadRevenus:", e); }
+}
+function renderRevenus() {
+  const list = document.getElementById("revenus-list");
+  if (!list) return;
+  const dateEl = document.getElementById("rev-date");
+  if (dateEl && !dateEl.value) dateEl.value = todayKey();
+  const prefix = budgetYear + "-" + String(budgetMonth+1).padStart(2,"0");
+  const rows = revenusData.filter(r => (r.key||"").slice(0,7) === prefix).sort((a,b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
+  list.innerHTML = "";
+  let total = 0;
+  rows.forEach(r => {
+    const amt = parseFloat(r.amt)||0;
+    total += amt;
+    const row = document.createElement("div"); row.className = "rev-row";
+    const d = document.createElement("span"); d.className = "rd"; d.textContent = r.desc || "Revenu";
+    const t = document.createElement("span"); t.className = "rt"; t.textContent = r.key;
+    const a = document.createElement("span"); a.className = "ra"; a.textContent = "+" + amt.toFixed(2) + "$";
+    const x = document.createElement("button"); x.className = "carte-del-btn"; x.style.opacity = "1"; x.textContent = "x";
+    x.onclick = () => delRevenu(r.id);
+    row.append(d, t, a, x);
+    list.appendChild(row);
+  });
+  const tot = document.getElementById("revenus-total");
+  if (tot) tot.textContent = "+" + total.toFixed(2) + "$";
+}
+window.addRevenu = async function() {
+  if (!revenusLoaded) return;
+  const amt = Math.round((parseFloat(document.getElementById("rev-amt")?.value)||0)*100)/100;
+  if (amt <= 0) return;
+  const desc = (document.getElementById("rev-desc")?.value || "").trim() || "Revenu";
+  const key = document.getElementById("rev-date")?.value || todayKey();
+  try {
+    const ref = await addDoc(collection(db,"users",uid(),"revenus"), {key, desc, amt});
+    revenusData.push({id:ref.id, key, desc, amt});
+  } catch(e) { console.error("addRevenu:", e); return; }
+  if (budgetKeyIsPaid(key)) await adjustSolde(amt);
+  document.getElementById("rev-desc").value = "";
+  document.getElementById("rev-amt").value = "";
+  renderRevenus();
+};
+async function delRevenu(id) {
+  const r = revenusData.find(x => x.id === id);
+  if (!r) return;
+  try { await deleteDoc(doc(db,"users",uid(),"revenus",id)); }
+  catch(e) { console.error("delRevenu:", e); return; }
+  revenusData = revenusData.filter(x => x.id !== id);
+  if (budgetKeyIsPaid(r.key)) await adjustSolde(-(parseFloat(r.amt)||0));
+  renderRevenus();
+}
 
 // Solde actuel : une depense du jour ou avant baisse le solde (une future ne le touche pas)
 function budgetKeyIsPaid(k) {
